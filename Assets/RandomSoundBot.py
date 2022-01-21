@@ -9,8 +9,6 @@
 # 2. make it so people can deactivate and activate the bot for a certain amount of time with arguments in the stfu command
 # 3. make it so people can change how often the bot joins and leaves channels with a command
 # 4. make it so people can input multiple commands in the same message
-# 5. make it so the bot has separate sound file directories for each server it's in
-# 6. make a command where people with a certain role can add and remove sound files from the directory for their server
 
 import discord
 from discord import FFmpegPCMAudio
@@ -163,6 +161,7 @@ async def on_message(message):
 					help_message += f"\n`@{client.user.name}` add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\""
 					help_message += f"\n`@{client.user.name}` remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\""
 					help_message += f"\n`@{client.user.name}` list:\n\tSends all of the sound files that this server is using"
+					help_message += f"\n`@{client.user.name}` give {{file name(s)}}:\n\tSends sound files from the server"
 					await message.reply(help_message)
 			# if leave command
 			elif command[1].lower() == "leave":
@@ -223,6 +222,28 @@ async def on_message(message):
 					sound_message += "```"
 					# send the list of sound files for the server
 					await message.reply(sound_message)
+			#if give command
+			elif command[1].lower() == "give":
+				# if the command has arguments
+				if len(command) > 2:
+					dir = f"Sounds/server_{message.guild.id}"
+					files = []
+					# loop through each argument
+					for filename in command[2:]:
+						filepath = f"{dir}/{filename}"
+						# if the argument doesn't contain "../" (for security redundancy), if the file exists, and if the file is less than 10mb (discord limitation)
+						if not "../" in filename and os.path.isfile(filepath) and os.path.getsize(filepath) < 10_000_000:
+							# add the file to the list of files to send
+							files.append(discord.File(filepath))
+							# if there are 10 files in the list
+							if len(files) == 10:
+								# force send the list then continue adding more files (since discord only lets you send 10 files at once max)
+								await message.reply(files=files)
+								files = []
+					# if there are any files in the list, send it
+					if files:
+						await message.reply(files=files)
+							
 
 # sets up the bot every time it joins a new server while running
 @client.event
