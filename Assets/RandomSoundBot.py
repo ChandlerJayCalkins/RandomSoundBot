@@ -159,6 +159,7 @@ async def on_message(message):
 					help_message += f"\n`@{client.user.name}` help:\n\tGives descriptions of how to use all of this bot's commands"
 					help_message += f"\n`@{client.user.name}` leave:\n\tMakes the bot leave the voice channel it's currently in"
 					help_message += f"\n`@{client.user.name}` stfu:\n\tMakes the bot shut up until you re-enable it with the activate command"
+					help_message += f"\n`@{client.user.name}` activate:\n\tAllows the bot to join channels randomly again after being disabled by the stfu command"
 					help_message += f"\n`@{client.user.name}` add:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\""
 					help_message += f"\n`@{client.user.name}` remove {{file names}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\""
 					help_message += f"\n`@{client.user.name}` list:\n\tSends all of the sound files that this server is using"
