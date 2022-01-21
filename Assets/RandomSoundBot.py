@@ -1,4 +1,8 @@
-# discord bot that joins a random channel with people in it at random times, plays a random sound, then leaves
+# Discord bot that joins a random channel with people in it at random times, plays a random sound, then leaves
+# Current commands:
+#	leave:		makes the bot stop playing and leave the channel
+#	stfu:		makes the bot stop playing and leave the channel, and disables the bot from playing until enabled again
+#	activate:	re-enables the bot to start waiting to join channels again
 
 # TODO:
 # 1. overall optimization (if possible)
