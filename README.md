@@ -5,7 +5,7 @@ Everything relevant is in the "Assets" folder
 
 RandomSoundBot.py is the source code
 
-If you want to get the bot to work on your own end, you need to make your own bot and put its token in a file called "BotToken.txt" in the same folder as the source code file
+If you want to get the bot to work on your own end, you need to make your own bot and put its token in a file called "BotToken.txt" in the same folder as the source code file (Assest/BotToken.txt)
 
 The "Sounds" folder is where you put sounds for the bot to use
 
