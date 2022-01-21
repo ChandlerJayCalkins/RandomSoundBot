@@ -22,7 +22,7 @@ ffmpeg_options = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 }
 
-# sets up the bot client and gives it the prefix of "@<botname> " for commands
+# sets up the bot client
 client = discord.Client()
 
 # gets the secret bot token by reading it from a local txt file
@@ -45,12 +45,14 @@ async def on_ready():
 	for guild in client.guilds:
 		active_in_guild[guild] = True
 
-	# activates the bot for each server it's in
+	# starts running the bot for each server it's in simultaneously
 	for guild in client.guilds:
 		client.loop.create_task(join_loop(guild))
 
 # waits a random amount of time, joins a voice channel channel, plays a random sound, then leaves and repeats
 async def join_loop(guild):
+	# directory that the sound files are kept in
+	sound_directory = "Sounds"
 	# message that the bot sends right before it starts playing sounds
 	warning_message = "XBOX LIVE"
 	# waits random amount between 0 seconds to 30 min
@@ -63,7 +65,7 @@ async def join_loop(guild):
 			# pick a random channel to join
 			channel = random.choice(populated_channels)
 			# pick a random sound to play
-			sound = random.choice(get_sounds("Sounds"))
+			sound = random.choice(get_sounds(sound_directory))
 			# prints the sound it's about to play
 			print(f"Now playing in {guild.name}: {sound}")
 			# get top channel bot is allowed to read and send messages in for the server
@@ -75,7 +77,7 @@ async def join_loop(guild):
 			if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == warning_message):
 				await text_channel.send(warning_message)
 			# play the file
-			voice.play(FFmpegPCMAudio(f"Sounds/{sound}"))
+			voice.play(FFmpegPCMAudio(f"{sound_directory}/{sound}"))
 			# wait until bot is not playing anymore audio
 			while voice.is_playing():
 				await asyncio.sleep(0.1)
@@ -100,6 +102,7 @@ def get_populated_vcs(guild):
 # returns a list of all sound files
 def get_sounds(directory):
 	sounds = []
+	# for each subdirectory in the sound directory
 	for (path, dir, files) in walk(directory):
 		# for each file in the sound directory
 		for file in files:
@@ -136,7 +139,7 @@ async def on_message(message):
 					voice_client.stop()
 			# if stfu (shut the fuck up) command
 			elif command[1].lower() == "stfu":
-				# disable the bot
+				# disable the bot in that server
 				active_in_guild[message.guild] = False
 				print(f"active in guild {message.guild}: {active_in_guild[message.guild]}")
 				# if the bot is connected to a channel in that server, then leave
@@ -147,10 +150,10 @@ async def on_message(message):
 			elif command[1].lower() == "activate":
 				# if the bot is not currently active
 				if not active_in_guild[message.guild]:
-					# enable the bot
+					# enable the bot in that server
 					active_in_guild[message.guild] = True
 					print(f"active in guild {message.guild}: {active_in_guild[message.guild]}")
-					# re-enable the join_loop function
+					# recreate a task for that server
 					client.loop.create_task(join_loop(message.guild))
 
 # runs the bot
