@@ -50,8 +50,7 @@ async def join_loop(guild):
 	# message that the bot sends right before it starts playing sounds
 	warning_message = "XBOX LIVE"
 	# waits random amount between 0 seconds to 30 min
-	# 0, 1801
-	await asyncio.sleep(random.randrange(0, 3))
+	await asyncio.sleep(random.randrange(0, 1801))
 	while active_in_guild[guild]:
 		# gets a list of all voice channels with people in them currently
 		populated_channels = get_populated_vcs(guild)
@@ -81,8 +80,7 @@ async def join_loop(guild):
 			# then disconnect the bot
 			await guild.voice_client.disconnect()
 		# waits random amount between 30 - 60 min
-		# 1800, 3601
-		await asyncio.sleep(random.randrange(0, 3))
+		await asyncio.sleep(random.randrange(1800, 3601))
 
 # returns a list of all voice channels with at least one person in them
 def get_populated_vcs(guild):
