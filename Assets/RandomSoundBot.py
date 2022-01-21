@@ -9,6 +9,8 @@
 # 2. make it so people can deactivate and activate the bot for a certain amount of time with arguments in the command
 # 3. make it so people can change how often the bot joins and leaves channels with commands
 # 4. make it so people can input multiple commands in the same message
+# 5. make it so the bot has separate sound file directories for each server it's in
+# 6. make a command where people with a certain role can add and remove sound files from the directory for their server
 
 import discord
 from discord import FFmpegPCMAudio
@@ -30,7 +32,6 @@ with open("BotToken.txt", "r") as f:
 	token = f.readline().strip()
 
 # string for the bot to detect commands
-# this is defined at the end of the file after client.run(token), change it there
 prefix = ""
 
 # keeps track of which servers the bot is enabled in and which ones it's not
@@ -39,8 +40,10 @@ active_in_guild = {}
 # called as soon as the bot is fully online and operational
 @client.event
 async def on_ready():
-	print("Bot is ready")
-	
+	# string that goes at the start of commands to help the bot detect the command
+	# it is currently "@{botname}"
+	prefix = f"<@!{client.user.id}> "
+
 	# initializes the active variables for each server
 	for guild in client.guilds:
 		active_in_guild[guild] = True
@@ -48,6 +51,8 @@ async def on_ready():
 	# starts running the bot for each server it's in simultaneously
 	for guild in client.guilds:
 		client.loop.create_task(join_loop(guild))
+	
+	print("Bot is running")
 
 # waits a random amount of time, joins a voice channel channel, plays a random sound, then leaves and repeats
 async def join_loop(guild):
@@ -158,7 +163,3 @@ async def on_message(message):
 
 # runs the bot
 client.run(token)
-
-# string that goes at the start of commands to help the bot detect the command
-# it is currently "@{botname}"
-prefix = f"<@!{client.user.id}> "
