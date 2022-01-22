@@ -4,10 +4,6 @@
 #	stfu:		makes the bot stop playing and leave the channel, and disables the bot from playing until enabled again
 #	activate:	re-enables the bot to start waiting to join channels again
 
-# TODO:
-# 1. overall optimization (if possible)
-# 2. make it so people can deactivate and activate the bot for a certain amount of time with arguments in the stfu command
-
 import discord
 from discord import FFmpegPCMAudio
 import asyncio
