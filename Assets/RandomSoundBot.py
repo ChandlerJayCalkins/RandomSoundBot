@@ -105,7 +105,8 @@ async def join_loop(guild):
 				# wait about 1 second since there's a bit of lag with ffmpeg
 				await asyncio.sleep(1)
 				# then disconnect the bot
-				await guild.voice_client.disconnect()
+				if guild.voice_client:
+					await guild.voice_client.disconnect()
 			# otherwise, print error message
 			else:
 				print(f"No sound file found in {guild.name} {{id={guild.id}}})")
@@ -420,7 +421,8 @@ async def on_message(message):
 							await asyncio.sleep(0.1)
 						await asyncio.sleep(1)
 						# disconnect when done playing
-						await message.guild.voice_client.disconnect()
+						if message.guild.voice_client:
+							await message.guild.voice_client.disconnect()
 					else:
 						await react_with_x(message)
 				else:
