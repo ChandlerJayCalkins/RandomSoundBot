@@ -37,6 +37,9 @@ active_in_guild = {}
 # keeps track of how frequently the bot joins in each server
 timer_for_guild = {}
 
+# keeps track of currently running task for each server
+task_for_guild = {}
+
 # called as soon as the bot is fully online and operational
 @client.event
 async def on_ready():
@@ -55,10 +58,10 @@ async def on_ready():
 async def start_in_server(guild):
 	# sets up its variable that keeps track of whether it's enabled or not
 	active_in_guild[guild] = True
-	# sets the default frequency of the bot joining channels to 1 - 2 min
-	timer_for_guild[guild] = [60, 121]
+	# sets the default frequency of the bot joining channels to 1 - 2 hours
+	timer_for_guild[guild] = [3600, 7201]
 	# creates a task for the bot to start running in for that server
-	client.loop.create_task(join_loop(guild))
+	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
 # waits a random amount of time, joins a voice channel channel, plays a random sound, then leaves and repeats
 # this function gets run separately for each server the bot is in
@@ -168,7 +171,8 @@ async def on_message(message):
 					help_message += f"{example_prefix} remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
 					help_message += f"{example_prefix} list:\n\tSends all of the sound files that this server is using"
 					help_message += f"{example_prefix} give {{file name(s)}}:\n\tSends sound files from the server"
-					help_message += f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}: \n\tChanges the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
+					help_message += f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:\n\tChanges the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
+					help_message += f"{example_prefix} reset:\n\tResets the bot's waiting time to join (useful for making it so you don't have to wait for a long previous timer setting to finish running for it to start joining at a faster frequency)"
 					await message.reply(help_message)
 			# if leave command
 			elif command[1].lower() == "leave":
@@ -425,6 +429,15 @@ async def on_message(message):
 					# react to message with a X emoji
 					if perms.add_reactions:
 						await message.add_reaction("\u274c")
+			# if reset command
+			elif command[1].lower() == "reset":
+				# reset the task for waiting and joining randomly
+				task_for_guild[message.guild].cancel()
+				task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
+				perms = message.channel.permissions_for(message.guild.me)
+				# react with checkmark emoji when done
+				if perms.add_reactions:
+					await message.add_reaction("\u2705")
 
 # returns an errors message containing files in a list
 def get_file_error_message(errors):
