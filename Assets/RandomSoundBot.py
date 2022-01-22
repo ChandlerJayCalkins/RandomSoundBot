@@ -163,6 +163,7 @@ async def on_message(message):
 					help_message += f"{example_prefix} leave:\n\tMakes the bot leave the voice channel it's currently in"
 					help_message += f"{example_prefix} stfu:\n\tMakes the bot shut up until you re-enable it with the activate command"
 					help_message += f"{example_prefix} activate:\n\tAllows the bot to join channels randomly again after being disabled by the stfu command"
+					help_message += f"{example_prefix} on?:\n\tBot will tell you if it is currently enabled or disabled"
 					help_message += f"{example_prefix} add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
 					help_message += f"{example_prefix} remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
 					help_message += f"{example_prefix} list:\n\tSends all of the sound files that this server is using"
@@ -184,6 +185,10 @@ async def on_message(message):
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 				if voice_client and voice_client.is_connected():
 					voice_client.stop()
+				perms = message.channel.permissions_for(message.guild.me)
+				# reacts to message with a checkmark emoji when done
+				if perms.add_reactions:
+					await message.add_reaction("\u2705")
 			# if activate command
 			elif command[1].lower() == "activate":
 				# if the bot is not currently active
@@ -193,6 +198,21 @@ async def on_message(message):
 					print(f"active in guild {message.guild}: {active_in_guild[message.guild]}")
 					# recreate a task for that server
 					client.loop.create_task(join_loop(message.guild))
+					perms = message.channel.permissions_for(message.guild.me)
+					# reacts to message with a checkmark emoji when done
+					if perms.add_reactions:
+						await message.add_reaction("\u2705")
+			# if on? command
+			elif command[1].lower() == "on?":
+				perms = message.channel.permissions_for(message.guild.me)
+				# if the bot has permission to add reactions
+				if perms.add_reactions:
+					# if the bot is enabled, react with checkmark
+					if active_in_guild[message.guild]:
+						await message.add_reaction("\u2705")
+					# if the bot is off, react with X
+					else:
+						await message.add_reaction("\u274c")
 			# if add command
 			elif command[1].lower() == "add":
 				# if the message author has the role that allows them to use this command and the message has attatched files
@@ -203,6 +223,10 @@ async def on_message(message):
 						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "../" in file.filename:
 							# save the file to the directory of the server the message was from
 							await file.save(f"Sounds/server_{message.guild.id}/{file.filename}")
+					perms = message.channel.permissions_for(message.guild.me)
+					# reacts to message with a checkmark emoji when done
+					if perms.add_reactions:
+						await message.add_reaction("\u2705")
 			# if remove command
 			elif command[1].lower() == "remove":
 				# if the message author has the role that allows them to use this command and the message command has arguments
@@ -215,6 +239,10 @@ async def on_message(message):
 						if not "../" in file and os.path.isfile(filepath):
 							# delete the file
 							os.remove(filepath)
+					perms = message.channel.permissions_for(message.guild.me)
+					# reacts to message with a checkmark emoji when done
+					if perms.add_reactions:
+						await message.add_reaction("\u2705")
 			# if list command
 			elif command[1].lower() == "list":
 				perms = message.channel.permissions_for(message.guild.me)
@@ -315,6 +343,10 @@ async def on_message(message):
 						if min <= max:
 							timer_for_guild[message.guild][0] = min
 							timer_for_guild[message.guild][1] = max + 1 # adds 1 since the randrange function uses a delimiter rather than an upper bound
+							perms = message.channel.permissions_for(message.guild.me)
+							# reacts to message with a checkmark emoji when done
+							if perms.add_reactions:
+								await message.add_reaction("\u2705")
 
 # sets up the bot every time it joins a new server while running
 @client.event
