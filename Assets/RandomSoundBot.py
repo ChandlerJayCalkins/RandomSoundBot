@@ -69,7 +69,7 @@ async def join_loop(guild):
 		os.mkdir(sound_directory)
 	# message that the bot sends right before it starts playing sounds
 	warning_message = "XBOX LIVE"
-	# waits random amount between 0 seconds to 30 min
+	# waits random amount of time as specified by what the server set it to (0 to 1 min by default)
 	await asyncio.sleep(random.randrange(0, timer_for_guild[guild][1] - timer_for_guild[guild][0]))
 	while active_in_guild[guild]:
 		# gets a list of all voice channels with people in them currently
@@ -105,7 +105,7 @@ async def join_loop(guild):
 			# otherwise, print error message
 			else:
 				print(f"No sound file found in {guild.name} {{id={guild.id}}})")
-		# waits random amount between 30 - 60 min
+		# waits random amount of time as specified by what the server sets it to (1 - 2 min default)
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
 
 # returns a list of all voice channels with at least one person in them
