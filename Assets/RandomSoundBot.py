@@ -311,7 +311,8 @@ async def on_message(message):
 							return
 					# double check to make sure min and max timers are valid
 					if (type(min) is float or type(min) is int) and (type(max) is float or type(max is int)):
-						if min < max:
+						# makes sure the min is not larger than the max
+						if min <= max:
 							timer_for_guild[message.guild][0] = min
 							timer_for_guild[message.guild][1] = max + 1 # adds 1 since the randrange function uses a delimiter rather than an upper bound
 
