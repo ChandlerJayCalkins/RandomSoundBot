@@ -180,7 +180,6 @@ async def on_message(message):
 			elif command[1].lower() == "stfu":
 				# disable the bot in that server
 				active_in_guild[message.guild] = False
-				print(f"active in guild {message.guild}: {active_in_guild[message.guild]}")
 				# if the bot is connected to a channel in that server, then leave
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 				if voice_client and voice_client.is_connected():
@@ -195,7 +194,6 @@ async def on_message(message):
 				if not active_in_guild[message.guild]:
 					# enable the bot in that server
 					active_in_guild[message.guild] = True
-					print(f"active in guild {message.guild}: {active_in_guild[message.guild]}")
 					# recreate a task for that server
 					client.loop.create_task(join_loop(message.guild))
 					perms = message.channel.permissions_for(message.guild.me)
