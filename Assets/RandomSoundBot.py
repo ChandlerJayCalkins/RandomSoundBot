@@ -55,7 +55,7 @@ async def on_ready():
 async def start_in_server(guild):
 	# sets up its variable that keeps track of whether it's enabled or not
 	active_in_guild[guild] = True
-	# sets the default frequency of the bot joining channels to 30 - 60 min
+	# sets the default frequency of the bot joining channels to 1 - 2 min
 	timer_for_guild[guild] = [60, 121]
 	# creates a task for the bot to start running in for that server
 	client.loop.create_task(join_loop(guild))
