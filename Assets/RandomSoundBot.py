@@ -228,15 +228,25 @@ async def on_message(message):
 				perms = message.channel.permissions_for(message.guild.me)
 				# if the message author has the role that allows them to use this command and the message has attatched files
 				if any(role.name == "Random Sound Bot Adder" for role in message.author.roles) and message.attachments:
+					errors = []
 					# check each file in the message
 					for file in message.attachments:
 						# if the file is an mp3 or wav file and doesn't contain a "../" in the name (for security redundancy)
 						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "../" in file.filename:
 							# save the file to the directory of the server the message was from
 							await file.save(f"Sounds/server_{message.guild.id}/{file.filename}")
+						# if the file couldn't be saved, add it to the error list
+						else:
+							errors.append(file.filename)
 					# reacts to message with a checkmark emoji when done
-					if perms.add_reactions:
+					if perms.add_reactions and len(message.attatchments) > len(errors):
 						await message.add_reaction("\u2705")
+					# if none of the files could be saved, react with an X emoji
+					elif perms.add_reactions:
+						await message.add_reaction("\u274c")
+					# if there were any files that couldn't be processed, reply with them
+					if errors:
+						await message.reply(get_file_error_message(errors))
 				else:
 					# react to message with a X emoji
 					if perms.add_reactions:
@@ -247,6 +257,7 @@ async def on_message(message):
 				# if the message author has the role that allows them to use this command and the message command has arguments
 				if any(role.name == "Random Sound Bot Remover" for role in message.author.roles) and len(command) > 2:
 					dir = f"Sounds/server_{message.guild.id}"
+					errors = []
 					# go and remove each file in the arguments
 					for file in command[2:]:
 						filepath = f"{dir}/{file}"
@@ -254,9 +265,17 @@ async def on_message(message):
 						if not "../" in file and os.path.isfile(filepath):
 							# delete the file
 							os.remove(filepath)
+						else:
+							errors.append(file)
 					# reacts to message with a checkmark emoji when done
-					if perms.add_reactions:
+					if perms.add_reactions and len(command[2:]) > len(errors):
 						await message.add_reaction("\u2705")
+					# if no files were deleted, then react with X emoji
+					elif perms.add_reactions:
+						await message.add_reaction("\u274c")
+					# if there were any files that couldn't be processed, reply with them
+					if errors:
+						await message.reply(get_file_error_message(errors))
 				else:
 					# react to message with a X emoji
 					if perms.add_reactions:
@@ -280,6 +299,7 @@ async def on_message(message):
 				if len(command) > 2:
 					dir = f"Sounds/server_{message.guild.id}"
 					files = []
+					errors = []
 					# loop through each argument
 					for filename in command[2:]:
 						filepath = f"{dir}/{filename}"
@@ -292,9 +312,15 @@ async def on_message(message):
 								# force send the list then continue adding more files (since discord only lets you send 10 files at once max)
 								await message.reply(files=files)
 								files = []
+						# if the file can't be processed, add to error list
+						else:
+							errors.append(filename)
 					# if there are any files in the list, send it
 					if files:
 						await message.reply(files=files)
+					# if there were any files that couldn't be processed, reply with them
+					if errors:
+						await message.reply(get_file_error_message(errors))
 			# if timer command
 			elif command[1].lower() == "timer":
 				perms = message.channel.permissions_for(message.guild.me)
@@ -399,6 +425,14 @@ async def on_message(message):
 					# react to message with a X emoji
 					if perms.add_reactions:
 						await message.add_reaction("\u274c")
+
+# returns an errors message containing files in a list
+def get_file_error_message(errors):
+	error_message = "```Could not process following files:"
+	for s in errors:
+		error_message += f"\n{s}"
+	error_message += "```"
+	return error_message
 
 # sets up the bot every time it joins a new server while running
 @client.event
