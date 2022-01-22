@@ -7,7 +7,7 @@
 # TODO:
 # 1. overall optimization (if possible)
 # 2. make it so people can deactivate and activate the bot for a certain amount of time with arguments in the stfu command
-# 3. make it so people can input multiple commands in the same message
+# 3. make it so when the bot changes its frequency, the join_loop command restarts and the wait time for the bot restarts
 
 import discord
 from discord import FFmpegPCMAudio
