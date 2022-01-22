@@ -7,8 +7,7 @@
 # TODO:
 # 1. overall optimization (if possible)
 # 2. make it so people can deactivate and activate the bot for a certain amount of time with arguments in the stfu command
-# 3. make it so people can change how often the bot joins and leaves channels with a command
-# 4. make it so people can input multiple commands in the same message
+# 3. make it so people can input multiple commands in the same message
 
 import discord
 from discord import FFmpegPCMAudio
@@ -35,6 +34,9 @@ prefix = ""
 # keeps track of which servers the bot is enabled in and which ones it's not
 active_in_guild = {}
 
+# keeps track of how frequently the bot joins in each server
+timer_for_guild = {}
+
 # called as soon as the bot is fully online and operational
 @client.event
 async def on_ready():
@@ -53,6 +55,8 @@ async def on_ready():
 async def start_in_server(guild):
 	# sets up its variable that keeps track of whether it's enabled or not
 	active_in_guild[guild] = True
+	# sets the default frequency of the bot joining channels to 30 - 60 min
+	timer_for_guild[guild] = [60, 121]
 	# creates a task for the bot to start running in for that server
 	client.loop.create_task(join_loop(guild))
 
@@ -66,7 +70,7 @@ async def join_loop(guild):
 	# message that the bot sends right before it starts playing sounds
 	warning_message = "XBOX LIVE"
 	# waits random amount between 0 seconds to 30 min
-	await asyncio.sleep(random.randrange(0, 1801))
+	await asyncio.sleep(random.randrange(0, timer_for_guild[guild][1] - timer_for_guild[guild][0]))
 	while active_in_guild[guild]:
 		# gets a list of all voice channels with people in them currently
 		populated_channels = get_populated_vcs(guild)
@@ -102,7 +106,7 @@ async def join_loop(guild):
 			else:
 				print(f"No sound file found in {guild.name} {{id={guild.id}}})")
 		# waits random amount between 30 - 60 min
-		await asyncio.sleep(random.randrange(1800, 3601))
+		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
 
 # returns a list of all voice channels with at least one person in them
 def get_populated_vcs(guild):
@@ -158,8 +162,8 @@ async def on_message(message):
 					help_message += f"\n`@{client.user.name}` leave:\n\tMakes the bot leave the voice channel it's currently in"
 					help_message += f"\n`@{client.user.name}` stfu:\n\tMakes the bot shut up until you re-enable it with the activate command"
 					help_message += f"\n`@{client.user.name}` activate:\n\tAllows the bot to join channels randomly again after being disabled by the stfu command"
-					help_message += f"\n`@{client.user.name}` add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\""
-					help_message += f"\n`@{client.user.name}` remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\""
+					help_message += f"\n`@{client.user.name}` add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
+					help_message += f"\n`@{client.user.name}` remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
 					help_message += f"\n`@{client.user.name}` list:\n\tSends all of the sound files that this server is using"
 					help_message += f"\n`@{client.user.name}` give {{file name(s)}}:\n\tSends sound files from the server"
 					await message.reply(help_message)
@@ -222,7 +226,7 @@ async def on_message(message):
 					sound_message += "```"
 					# send the list of sound files for the server
 					await message.reply(sound_message)
-			#if give command
+			# if give command
 			elif command[1].lower() == "give":
 				# if the command has arguments
 				if len(command) > 2:
@@ -243,7 +247,71 @@ async def on_message(message):
 					# if there are any files in the list, send it
 					if files:
 						await message.reply(files=files)
-							
+			# if timer command
+			elif command[1].lower() == "timer":
+				# if there are enough arguments
+				if len(command) > 3:
+					min = 0
+					max = 0
+					# if the first argument is a number, get it
+					try:
+						min = float(command[2])
+					# otherwise, see if it's in colon format
+					except:
+						if ":" in command[2]:
+							min = command[2].split(":", 2)
+							# if the argument is not in colon format, stop
+							for n in range(0, len(min)):
+								try:
+									min[n] = int(min[n])
+								except:
+									return
+							# if the argument has 2 values
+							if len(min) == 2:
+								# get mins + seconds
+								min[0] *= 60
+								min = min[0] + min[1]
+							# if the agrument has 3 values
+							elif len(min) == 3:
+								# get hours + mins + seconds
+								min[0] *= 3600
+								min[1] *= 60
+								min = min[0] + min[1] + min[2]
+						# if there are no colons in first argument, stop
+						else:
+							return
+					# if the second argument is a number, get it
+					try:
+						max = float(command[3])
+					# otherwise, see if it's in colon format
+					except:
+						if ":" in command[3]:
+							max = command[3].split(":", 2)
+							# if the argument is not in colon format, stop
+							for n in range(0, len(max)):
+								try:
+									max[n] = int(max[n])
+								except:
+									return
+							# if argument has 2 values
+							if len(max) == 2:
+								# get mins + seconds
+								max[0] *= 60
+								max = max[0] + max[1]
+							# if argument has 3 values
+							elif len(max) == 3:
+								# get hours + mins + seconds
+								max[0] *= 3600
+								max[1] *= 60
+								max = max[0] + max[1] + max[2]
+						# if there are not colons in second argument, stop
+						else:
+							return
+					# double check to make sure min and max timers are valid
+					if (type(min) is float or type(min) is int) and (type(max) is float or type(max is int)):
+						if min < max:
+							timer_for_guild[message.guild][0] = min
+							timer_for_guild[message.guild][1] = max + 1 # adds 1 since the randrange function uses a delimiter rather than an upper bound
 
 # sets up the bot every time it joins a new server while running
 @client.event
