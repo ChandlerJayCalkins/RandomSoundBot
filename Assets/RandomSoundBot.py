@@ -157,15 +157,17 @@ async def on_message(message):
 				# if the bot has permission to send messages in this channel
 				if (perms.send_messages):
 					# send descriptions of how to use all of the commands
+					example_prefix = f"\n`@{client.user.name}`"
 					help_message = "List of commands:"
-					help_message += f"\n`@{client.user.name}` help:\n\tGives descriptions of how to use all of this bot's commands"
-					help_message += f"\n`@{client.user.name}` leave:\n\tMakes the bot leave the voice channel it's currently in"
-					help_message += f"\n`@{client.user.name}` stfu:\n\tMakes the bot shut up until you re-enable it with the activate command"
-					help_message += f"\n`@{client.user.name}` activate:\n\tAllows the bot to join channels randomly again after being disabled by the stfu command"
-					help_message += f"\n`@{client.user.name}` add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
-					help_message += f"\n`@{client.user.name}` remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
-					help_message += f"\n`@{client.user.name}` list:\n\tSends all of the sound files that this server is using"
-					help_message += f"\n`@{client.user.name}` give {{file name(s)}}:\n\tSends sound files from the server"
+					help_message += f"{example_prefix} help:\n\tGives descriptions of how to use all of this bot's commands"
+					help_message += f"{example_prefix} leave:\n\tMakes the bot leave the voice channel it's currently in"
+					help_message += f"{example_prefix} stfu:\n\tMakes the bot shut up until you re-enable it with the activate command"
+					help_message += f"{example_prefix} activate:\n\tAllows the bot to join channels randomly again after being disabled by the stfu command"
+					help_message += f"{example_prefix} add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
+					help_message += f"{example_prefix} remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
+					help_message += f"{example_prefix} list:\n\tSends all of the sound files that this server is using"
+					help_message += f"{example_prefix} give {{file name(s)}}:\n\tSends sound files from the server"
+					help_message += f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}: \n\tChanges the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
 					await message.reply(help_message)
 			# if leave command
 			elif command[1].lower() == "leave":
