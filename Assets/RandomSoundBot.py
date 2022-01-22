@@ -143,8 +143,8 @@ def get_warning_channel(guild):
 # handles commands
 @client.event
 async def on_message(message):
-	# if the message has the command prefix
-	if message.content.startswith(prefix):
+	# if the message has the command prefix and is not a dm
+	if message.content.startswith(prefix) and message.guild:
 		command = message.content.split()
 		# if the command has any arguments
 		if len(command) > 1:
