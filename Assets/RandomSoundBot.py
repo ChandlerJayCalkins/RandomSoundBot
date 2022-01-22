@@ -85,6 +85,12 @@ async def join_loop(guild):
 			text_channel = get_warning_channel(guild)
 			# if the sound file exists
 			if os.path.isfile(sound_file):
+				voice_client = discord.utils.get(client.voice_clients, guild=guild)
+				# if the bot is already connected to a voice channel in this server, then wait until it leaves
+				if voice_client:
+					while voice_client.is_connected():
+						print("currently in while loop")
+						await asyncio.sleep(0.1)
 				# join the channel
 				voice = await channel.connect()
 				# if there is a channel the bot can read + send in, and the last message wasn't a warning message, then send a warning message
@@ -168,6 +174,7 @@ async def on_message(message):
 					help_message += f"{example_prefix} give {{file name(s)}}:\n\tSends sound files from the server"
 					help_message += f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:\n\tChanges the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
 					help_message += f"{example_prefix} reset:\n\tResets the bot's waiting time to join (useful for making it so you don't have to wait for a long previous timer setting to finish running for it to start joining at a faster frequency)"
+					help_message += f"{example_prefix} play {{file name}}:\n\tMakes the bot join your voice channel and play the sound you input"
 					await message.reply(help_message)
 			# if leave command
 			elif command[1].lower() == "leave":
@@ -175,6 +182,8 @@ async def on_message(message):
 				# if the bot is connected to a channel in that server, then leave
 				if voice_client and voice_client.is_connected():
 					voice_client.stop()
+				else:
+					await react_with_x(message)
 			# if stfu (shut the fuck up) command
 			elif command[1].lower() == "stfu":
 				perms = message.channel.permissions_for(message.guild.me)
@@ -187,16 +196,13 @@ async def on_message(message):
 					if voice_client and voice_client.is_connected():
 						voice_client.stop()
 					# reacts to message with a checkmark emoji when done
-					if perms.add_reactions:
-						await message.add_reaction("\u2705")
+					await react_with_check(message)
 				# if bot is already disabled
 				else:
 					# react to message with a X emoji
-					if perms.add_reactions:
-						await message.add_reaction("\u274c")
+					await react_with_x(message)
 			# if activate command
 			elif command[1].lower() == "activate":
-				perms = message.channel.permissions_for(message.guild.me)
 				# if the bot is not currently active
 				if not active_in_guild[message.guild]:
 					# enable the bot in that server
@@ -204,27 +210,20 @@ async def on_message(message):
 					# recreate a task for that server
 					client.loop.create_task(join_loop(message.guild))
 					# reacts to message with a checkmark emoji when done
-					if perms.add_reactions:
-						await message.add_reaction("\u2705")
+					await react_with_check(message)
 				# if bot is already enabled
 				else:
-					# react to message with a X emoji
-					if perms.add_reactions:
-						await message.add_reaction("\u274c")
+					await react_with_x(message)
 			# if on? command
 			elif command[1].lower() == "on?":
-				perms = message.channel.permissions_for(message.guild.me)
-				# if the bot has permission to add reactions
-				if perms.add_reactions:
-					# if the bot is enabled, react with checkmark
-					if active_in_guild[message.guild]:
-						await message.add_reaction("\u2705")
-					# if the bot is off, react with X
-					else:
-						await message.add_reaction("\u274c")
+				# if the bot is enabled, react with checkmark
+				if active_in_guild[message.guild]:
+					await react_with_check(message)
+				# if the bot is off, react with X
+				else:
+					await react_with_x(message)
 			# if add command
 			elif command[1].lower() == "add":
-				perms = message.channel.permissions_for(message.guild.me)
 				# if the message author has the role that allows them to use this command and the message has attatched files
 				if any(role.name == "Random Sound Bot Adder" for role in message.author.roles) and message.attachments:
 					errors = []
@@ -238,21 +237,18 @@ async def on_message(message):
 						else:
 							errors.append(file.filename)
 					# reacts to message with a checkmark emoji when done
-					if perms.add_reactions and len(message.attatchments) > len(errors):
-						await message.add_reaction("\u2705")
+					if len(message.attatchments) > len(errors):
+						await react_with_check(message)
 					# if none of the files could be saved, react with an X emoji
-					elif perms.add_reactions:
-						await message.add_reaction("\u274c")
+					else:
+						await react_with_x(message)
 					# if there were any files that couldn't be processed, reply with them
 					if errors:
 						await message.reply(get_file_error_message(errors))
 				else:
-					# react to message with a X emoji
-					if perms.add_reactions:
-						await message.add_reaction("\u274c")
+					await react_with_x(message)
 			# if remove command
 			elif command[1].lower() == "remove":
-				perms = message.channel.permissions_for(message.guild.me)
 				# if the message author has the role that allows them to use this command and the message command has arguments
 				if any(role.name == "Random Sound Bot Remover" for role in message.author.roles) and len(command) > 2:
 					dir = f"Sounds/server_{message.guild.id}"
@@ -267,18 +263,16 @@ async def on_message(message):
 						else:
 							errors.append(file)
 					# reacts to message with a checkmark emoji when done
-					if perms.add_reactions and len(command[2:]) > len(errors):
-						await message.add_reaction("\u2705")
+					if len(command[2:]) > len(errors):
+						await react_with_check(message)
 					# if no files were deleted, then react with X emoji
-					elif perms.add_reactions:
-						await message.add_reaction("\u274c")
+					else:
+						await react_with_x(message)
 					# if there were any files that couldn't be processed, reply with them
 					if errors:
 						await message.reply(get_file_error_message(errors))
 				else:
-					# react to message with a X emoji
-					if perms.add_reactions:
-						await message.add_reaction("\u274c")
+					await react_with_x(message)
 			# if list command
 			elif command[1].lower() == "list":
 				perms = message.channel.permissions_for(message.guild.me)
@@ -322,7 +316,6 @@ async def on_message(message):
 						await message.reply(get_file_error_message(errors))
 			# if timer command
 			elif command[1].lower() == "timer":
-				perms = message.channel.permissions_for(message.guild.me)
 				# if there are enough arguments
 				if len(command) > 3:
 					min = 0
@@ -339,9 +332,7 @@ async def on_message(message):
 								try:
 									min[n] = int(min[n])
 								except:
-									# react to message with a X emoji
-									if perms.add_reactions:
-										await message.add_reaction("\u274c")
+									await react_with_x(message)
 									return
 							# if the argument has 2 values
 							if len(min) == 2:
@@ -355,15 +346,11 @@ async def on_message(message):
 								min[1] *= 60
 								min = min[0] + min[1] + min[2]
 							else:
-								# react to message with a X emoji
-								if perms.add_reactions:
-									await message.add_reaction("\u274c")
+								await react_with_x(message)
 								return
 						# if there are no colons in first argument, stop
 						else:
-							# react to message with a X emoji
-							if perms.add_reactions:
-								await message.add_reaction("\u274c")
+							await react_with_x(message)
 							return
 					# if the second argument is a number, get it
 					try:
@@ -377,9 +364,7 @@ async def on_message(message):
 								try:
 									max[n] = int(max[n])
 								except:
-									# react to message with a X emoji
-									if perms.add_reactions:
-										await message.add_reaction("\u274c")
+									await react_with_x(message)
 									return
 							# if argument has 2 values
 							if len(max) == 2:
@@ -393,15 +378,11 @@ async def on_message(message):
 								max[1] *= 60
 								max = max[0] + max[1] + max[2]
 							else:
-								# react to message with a X emoji
-								if perms.add_reactions:
-									await message.add_reaction("\u274c")
+								await react_with_x(message)
 								return
 						# if there are not colons in second argument, stop
 						else:
-							# react to message with a X emoji
-							if perms.add_reactions:
-								await message.add_reaction("\u274c")
+							await react_with_x(message)
 							return
 					# double check to make sure min and max timers are valid
 					if (type(min) is float or type(min) is int) and (type(max) is float or type(max is int)):
@@ -410,29 +391,52 @@ async def on_message(message):
 							timer_for_guild[message.guild][0] = min
 							timer_for_guild[message.guild][1] = max + 1 # adds 1 since the randrange function uses a delimiter rather than an upper bound
 							# reacts to message with a checkmark emoji when done
-							if perms.add_reactions:
-								await message.add_reaction("\u2705")
+							await react_with_check(message)
 						else:
-							# react to message with a X emoji
-							if perms.add_reactions:
-								await message.add_reaction("\u274c")
+							await react_with_x(message)
 					else:
-						# react to message with a X emoji
-						if perms.add_reactions:
-							await message.add_reaction("\u274c")
+						await react_with_x(message)
 				else:
-					# react to message with a X emoji
-					if perms.add_reactions:
-						await message.add_reaction("\u274c")
+					await react_with_x(message)
 			# if reset command
 			elif command[1].lower() == "reset":
 				# reset the task for waiting and joining randomly
 				task_for_guild[message.guild].cancel()
 				task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
-				perms = message.channel.permissions_for(message.guild.me)
-				# react with checkmark emoji when done
-				if perms.add_reactions:
-					await message.add_reaction("\u2705")
+				await react_with_check(message)
+			# if play command
+			elif command[1].lower() == "play":
+				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
+				# if the command author is in a voice channel, the bot is enabled in the server, there are arguments, and the bot isn't already in a voice channel
+				if message.author.voice and active_in_guild[message.guild] and len(command) > 2 and not (voice_client and voice_client.is_connected()):
+					channel = message.author.voice.channel
+					sound_directory = f"Sounds/server_{message.guild.id}/{command[2]}"
+					# if the argument doesn't contain "../" (for security redundancy) and the file in the argument exists
+					if not "../" in command[2] and os.path.isfile(sound_directory):
+						# connect and play the audio
+						voice = await channel.connect()
+						voice.play(FFmpegPCMAudio(sound_directory))
+						while voice.is_playing():
+							await asyncio.sleep(0.1)
+						await asyncio.sleep(1)
+						# disconnect when done playing
+						await message.guild.voice_client.disconnect()
+					else:
+						await react_with_x(message)
+				else:
+					await react_with_x(message)
+
+# makes the bot react to a message with a checkmark emoji if it's able to
+async def react_with_check(message):
+	perms = message.channel.permissions_for(message.guild.me)
+	if perms.add_reactions:
+		await message.add_reaction("\u2705")
+
+# makes the bot react to a message with an X emoji if it's able to
+async def react_with_x(message):
+	perms = message.channel.permissions_for(message.guild.me)
+	if perms.add_reactions:
+		await message.add_reaction("\u274c")
 
 # returns an errors message containing files in a list
 def get_file_error_message(errors):
