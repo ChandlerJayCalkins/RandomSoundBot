@@ -153,6 +153,9 @@ async def on_message(message):
 	# if the message has the command prefix and is not a dm
 	if message.content.startswith(prefix) and message.guild:
 		command = message.content.split()
+		adder_role = "Random Sound Bot Adder"
+		remover_role = "Random Sound Bot Remover"
+		sound_dir = f"Sounds/server_{message.guild.id}"
 		# if the command has any arguments
 		if len(command) > 1:
 			global active
@@ -171,6 +174,7 @@ async def on_message(message):
 					help_message += f"{example_prefix} on?:\n\tBot will tell you if it is currently enabled or disabled"
 					help_message += f"{example_prefix} add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
 					help_message += f"{example_prefix} remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
+					help_message += f"{example_prefix} rename {{file name}} {{new name}}:\n\tRenames a file in this server's sound list (requires a role called \"Random Sound Bot Adder\")"
 					help_message += f"{example_prefix} list:\n\tSends all of the sound files that this server is using"
 					help_message += f"{example_prefix} give {{file name(s)}}:\n\tSends sound files from the server"
 					help_message += f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:\n\tChanges the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
@@ -226,14 +230,14 @@ async def on_message(message):
 			# if add command
 			elif command[1].lower() == "add":
 				# if the message author has the role that allows them to use this command and the message has attatched files
-				if any(role.name == "Random Sound Bot Adder" for role in message.author.roles) and message.attachments:
+				if any(role.name == adder_role for role in message.author.roles) and message.attachments:
 					errors = []
 					# check each file in the message
 					for file in message.attachments:
 						# if the file is an mp3 or wav file and doesn't contain a "../" in the name (for security redundancy)
 						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "../" in file.filename:
 							# save the file to the directory of the server the message was from
-							await file.save(f"Sounds/server_{message.guild.id}/{file.filename}")
+							await file.save(f"{sound_dir}/{file.filename}")
 						# if the file couldn't be saved, add it to the error list
 						else:
 							errors.append(file.filename)
@@ -251,14 +255,13 @@ async def on_message(message):
 			# if remove command
 			elif command[1].lower() == "remove":
 				# if the message author has the role that allows them to use this command and the message command has arguments
-				if any(role.name == "Random Sound Bot Remover" for role in message.author.roles) and len(command) > 2:
-					dir = f"Sounds/server_{message.guild.id}"
+				if any(role.name == remover_role for role in message.author.roles) and len(command) > 2:
 					errors = []
 					# go and remove each file in the arguments
 					for file in command[2:]:
-						filepath = f"{dir}/{file}"
-						# if the argument doesn't contain "../" (for security redundancy) and the file exists
-						if not "../" in file and os.path.isfile(filepath):
+						filepath = f"{sound_dir}/{file}"
+						# if the argument doesn't contain "/" (for security redundancy) and the file exists
+						if not "/" in file and os.path.isfile(filepath):
 							# delete the file
 							os.remove(filepath)
 						else:
@@ -274,13 +277,28 @@ async def on_message(message):
 						await message.reply(get_file_error_message(errors))
 				else:
 					await react_with_x(message)
+			# if rename command
+			elif command[1].lower() == "rename":
+				# if the person has the role that allows them to use this command and the command has enough arguments
+				if any(role.name == adder_role for role in message.author.roles) and len(command) > 3:
+					old_dir = f"{sound_dir}/{command[2]}"
+					# if the file exists, the arguments don't contain "/" (for security redundancy), and the new name has an mp3 or wav file extension
+					if os.path.isfile(old_dir) and not "/" in command[2] and not "/" in command[3] and (command[3].endswith(".mp3") or command[3].endswith(".wav")):
+						# rename the file and react with a check
+						new_dir = f"{sound_dir}/{command[3]}"
+						os.rename(old_dir, new_dir)
+						await react_with_check(message)
+					else:
+						await react_with_x(message)
+				else:
+					await react_with_x(message)
 			# if list command
 			elif command[1].lower() == "list":
 				perms = message.channel.permissions_for(message.guild.me)
 				# if the bot has permission to send messages in this channel
 				if (perms.send_messages):
 					# get a list of all sound files in the server's sound folder
-					sounds = get_sounds(f"Sounds/server_{message.guild.id}")
+					sounds = get_sounds(f"{sound_dir}")
 					sound_message = f"```List of sounds for {message.guild.name}:"
 					for s in sounds:
 						sound_message += f"\n{s}"
@@ -291,14 +309,13 @@ async def on_message(message):
 			elif command[1].lower() == "give":
 				# if the command has arguments
 				if len(command) > 2:
-					dir = f"Sounds/server_{message.guild.id}"
 					files = []
 					errors = []
 					# loop through each argument
 					for filename in command[2:]:
-						filepath = f"{dir}/{filename}"
-						# if the argument doesn't contain "../" (for security redundancy), if the file exists, and if the file is less than 10mb (discord limitation)
-						if not "../" in filename and os.path.isfile(filepath) and os.path.getsize(filepath) < 10_000_000:
+						filepath = f"{sound_dir}/{filename}"
+						# if the argument doesn't contain "/" (for security redundancy), if the file exists, and if the file is less than 10mb (discord limitation)
+						if not "/" in filename and os.path.isfile(filepath) and os.path.getsize(filepath) < 10_000_000:
 							# add the file to the list of files to send
 							files.append(discord.File(filepath))
 							# if there are 10 files in the list
@@ -411,9 +428,9 @@ async def on_message(message):
 				# if the command author is in a voice channel, the bot is enabled in the server, there are arguments, and the bot isn't already in a voice channel
 				if message.author.voice and active_in_guild[message.guild] and len(command) > 2 and not (voice_client and voice_client.is_connected()):
 					channel = message.author.voice.channel
-					sound_directory = f"Sounds/server_{message.guild.id}/{command[2]}"
-					# if the argument doesn't contain "../" (for security redundancy) and the file in the argument exists
-					if not "../" in command[2] and os.path.isfile(sound_directory):
+					sound_directory = f"{sound_dir}/{command[2]}"
+					# if the argument doesn't contain "/" (for security redundancy) and the file in the argument exists
+					if not "/" in command[2] and os.path.isfile(sound_directory):
 						# connect and play the audio
 						voice = await channel.connect()
 						voice.play(FFmpegPCMAudio(sound_directory))
@@ -442,11 +459,15 @@ async def react_with_x(message):
 
 # returns an errors message containing files in a list
 def get_file_error_message(errors):
-	error_message = "```Could not process following files:"
-	for s in errors:
-		error_message += f"\n{s}"
-	error_message += "```"
-	return error_message
+	if len(errors) > 0:
+		error_message = "```Could not process the following file"
+		if len(errors) > 1:
+			error_message += "s"
+		error_message += ":"
+		for s in errors:
+			error_message += f"\n{s}"
+		error_message += "```"
+		return error_message
 
 # sets up the bot every time it joins a new server while running
 @client.event
