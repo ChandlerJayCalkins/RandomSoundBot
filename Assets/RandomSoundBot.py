@@ -238,7 +238,7 @@ async def on_message(message):
 						else:
 							errors.append(file.filename)
 					# reacts to message with a checkmark emoji when done
-					if len(message.attatchments) > len(errors):
+					if len(message.attachments) > len(errors):
 						await react_with_check(message)
 					# if none of the files could be saved, react with an X emoji
 					else:
