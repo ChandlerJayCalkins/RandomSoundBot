@@ -53,8 +53,8 @@ async def on_ready():
 async def start_in_server(guild):
 	# sets up its variable that keeps track of whether it's enabled or not
 	active_in_guild[guild] = True
-	# sets the default frequency of the bot joining channels to 1 - 2 hours
-	timer_for_guild[guild] = [3600, 7201]
+	# sets the default frequency of the bot joining channels to 1 min - 3 hours
+	timer_for_guild[guild] = [60, 10_801]
 	# creates a task for the bot to start running in for that server
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
@@ -67,9 +67,9 @@ async def join_loop(guild):
 		os.mkdir(sound_directory)
 	# message that the bot sends right before it starts playing sounds
 	warning_message = "XBOX LIVE"
-	# waits random amount of time as specified by what the server set it to (0 to 1 min by default)
-	await asyncio.sleep(random.randrange(0, timer_for_guild[guild][1] - timer_for_guild[guild][0]))
 	while active_in_guild[guild]:
+		# waits random amount of time as specified by what the server sets it to (1 min - 3 hours default)
+		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
 		# gets a list of all voice channels with people in them currently
 		populated_channels = get_populated_vcs(guild)
 		# if there are any channels with people in them, then pick and random audio file, join a random channel with people, and play the file
@@ -110,8 +110,6 @@ async def join_loop(guild):
 			# otherwise, print error message
 			else:
 				print(f"No sound file found in {guild.name} {{id={guild.id}}})")
-		# waits random amount of time as specified by what the server sets it to (1 - 2 min default)
-		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
 
 # returns a list of all voice channels with at least one person in them
 def get_populated_vcs(guild):
@@ -156,12 +154,12 @@ async def on_message(message):
 		adder_role = "Random Sound Bot Adder"
 		remover_role = "Random Sound Bot Remover"
 		sound_dir = f"Sounds/server_{message.guild.id}"
+		perms = message.channel.permissions_for(message.guild.me)
 		# if the command has any arguments
 		if len(command) > 1:
 			global active
 			# if help command
 			if command[1].lower() == "help":
-				perms = message.channel.permissions_for(message.guild.me)
 				# if the bot has permission to send messages in this channel
 				if (perms.send_messages):
 					# send descriptions of how to use all of the commands
@@ -191,7 +189,6 @@ async def on_message(message):
 					await react_with_x(message)
 			# if stfu (shut the fuck up) command
 			elif command[1].lower() == "stfu":
-				perms = message.channel.permissions_for(message.guild.me)
 				# if the bot is currently active
 				if active_in_guild[message.guild]:
 					# disable the bot in that server
@@ -294,9 +291,8 @@ async def on_message(message):
 					await react_with_x(message)
 			# if list command
 			elif command[1].lower() == "list":
-				perms = message.channel.permissions_for(message.guild.me)
 				# if the bot has permission to send messages in this channel
-				if (perms.send_messages):
+				if perms.send_messages:
 					# get a list of all sound files in the server's sound folder
 					sounds = get_sounds(f"{sound_dir}")
 					sound_message = f"```List of sounds for {message.guild.name}:"
@@ -305,10 +301,12 @@ async def on_message(message):
 					sound_message += "```"
 					# send the list of sound files for the server
 					await message.reply(sound_message)
+				else:
+					react_with_x(message)
 			# if give command
 			elif command[1].lower() == "give":
-				# if the command has arguments
-				if len(command) > 2:
+				# if the command has arguments and the bot can send messages
+				if len(command) > 2 and perms.send_messages:
 					files = []
 					errors = []
 					# loop through each argument
@@ -332,78 +330,46 @@ async def on_message(message):
 					# if there were any files that couldn't be processed, reply with them
 					if errors:
 						await message.reply(get_file_error_message(errors))
+				else:
+					react_with_x(message)
 			# if timer command
 			elif command[1].lower() == "timer":
 				# if there are enough arguments
 				if len(command) > 3:
-					min = 0
-					max = 0
-					# if the first argument is a number, get it
-					try:
-						min = float(command[2])
-					# otherwise, see if it's in colon format
-					except:
-						if ":" in command[2]:
-							min = command[2].split(":", 2)
-							# if the argument is not in colon format, stop
-							for n in range(0, len(min)):
-								try:
-									min[n] = int(min[n])
-								except:
-									await react_with_x(message)
+					async def process_args(arg):
+						time = None
+						# if the argument is a number, get it
+						try:
+							time = float(arg)
+						# otherwise, see if it's in colon format
+						except:
+							if ":" in arg:
+								time = arg.split(":", 2)
+								# if the argument is not in colon format, stop
+								for n in range(0, len(time)):
+									try:
+										time[n] = int(time[n])
+									except:
+										return
+								# if the argument has 2 values
+								if len(time) == 2:
+									time[0] *= 60
+									time = time[0] + time[1]
+								# if the argument has 3 values
+								elif len(time) == 3:
+									time[0] *= 3600
+									time[1] *= 60
+									time = time[0] + time[1] + time[2]
+								else:
 									return
-							# if the argument has 2 values
-							if len(min) == 2:
-								# get mins + seconds
-								min[0] *= 60
-								min = min[0] + min[1]
-							# if the agrument has 3 values
-							elif len(min) == 3:
-								# get hours + mins + seconds
-								min[0] *= 3600
-								min[1] *= 60
-								min = min[0] + min[1] + min[2]
 							else:
-								await react_with_x(message)
 								return
-						# if there are no colons in first argument, stop
-						else:
-							await react_with_x(message)
-							return
-					# if the second argument is a number, get it
-					try:
-						max = float(command[3])
-					# otherwise, see if it's in colon format
-					except:
-						if ":" in command[3]:
-							max = command[3].split(":", 2)
-							# if the argument is not in colon format, stop
-							for n in range(0, len(max)):
-								try:
-									max[n] = int(max[n])
-								except:
-									await react_with_x(message)
-									return
-							# if argument has 2 values
-							if len(max) == 2:
-								# get mins + seconds
-								max[0] *= 60
-								max = max[0] + max[1]
-							# if argument has 3 values
-							elif len(max) == 3:
-								# get hours + mins + seconds
-								max[0] *= 3600
-								max[1] *= 60
-								max = max[0] + max[1] + max[2]
-							else:
-								await react_with_x(message)
-								return
-						# if there are not colons in second argument, stop
-						else:
-							await react_with_x(message)
-							return
+						return time
+					# try to get the numbers from each argument
+					min = await process_args(command[2])
+					max = await process_args(command[3])
 					# double check to make sure min and max timers are valid
-					if (type(min) is float or type(min) is int) and (type(max) is float or type(max is int)):
+					if (type(min) is float or type(min) is int) and (type(max) is float or type(max) is int):
 						# makes sure the min is not larger than the max
 						if min <= max:
 							timer_for_guild[message.guild][0] = min
@@ -425,8 +391,9 @@ async def on_message(message):
 			# if play command
 			elif command[1].lower() == "play":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-				# if the command author is in a voice channel, the bot is enabled in the server, there are arguments, and the bot isn't already in a voice channel
-				if message.author.voice and active_in_guild[message.guild] and len(command) > 2 and not (voice_client and voice_client.is_connected()):
+				v_perms = message.author.voice.channel.permissions_for(message.guild.me)
+				# if the author is in a channel, the bot is enabled in the server, there are arguments, the bot isn't already in a voice channel, and the bot has permission to join and speak in the channel
+				if message.author.voice and active_in_guild[message.guild] and len(command) > 2 and not (voice_client and voice_client.is_connected()) and v_perms.connect and v_perms.speak:
 					channel = message.author.voice.channel
 					sound_directory = f"{sound_dir}/{command[2]}"
 					# if the argument doesn't contain "/" (for security redundancy) and the file in the argument exists
