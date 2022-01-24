@@ -292,6 +292,8 @@ async def on_message(message):
 				if perms.send_messages:
 					# get a list of all sound files in the server's sound folder
 					sounds = get_sounds(f"{sound_dir}")
+					# sort the sounds in alphabetical order
+					sounds.sort()
 					sound_message = f"```List of sounds for {message.guild.name}:"
 					for s in sounds:
 						sound_message += f"\n{s}"
@@ -383,13 +385,14 @@ async def on_message(message):
 			elif command[1].lower() == "timer?":
 				# if the bot has permission to send messages in the channel of the command
 				if perms.send_messages:
-					# reply with the bot's join frequency for that server
+					# calculate the hours, minutes, and seconds for min and max
 					min_hrs = int(timer_for_guild[message.guild][0] // 3600)
 					min_min = int(timer_for_guild[message.guild][0] // 60 % 60)
-					min_sec = float(timer_for_guild[message.guild][0] % 60)
+					min_sec = timer_for_guild[message.guild][0] % 60
 					max_hrs = int(timer_for_guild[message.guild][1] // 3600)
 					max_min = int(timer_for_guild[message.guild][1] // 60 % 60)
-					max_sec = float((timer_for_guild[message.guild][1] - 1) % 60)
+					max_sec = (timer_for_guild[message.guild][1] - 1) % 60
+					# reply with bot join frequency
 					await message.reply(f"Bot will join every `{min_hrs} hours {min_min} mins {min_sec} secs` to `{max_hrs} hours {max_min} mins {max_sec} secs`")
 				else:
 					await react_with_x(message)
