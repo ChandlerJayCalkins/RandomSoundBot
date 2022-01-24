@@ -1,5 +1,6 @@
 # Discord bot that joins a random channel with people in it at random times, plays a random sound, then leaves
 
+from audioop import add
 import discord
 from discord import FFmpegPCMAudio
 import asyncio
@@ -158,38 +159,144 @@ async def on_message(message):
 			if command[1].lower() == "help":
 				# if the bot has permission to send messages in this channel
 				if perms.send_messages:
-					# send descriptions of how to use all of the commands
+					# define info for every command to reply with
 					example_prefix = f"`@{client.user.name}`"
-					help_message = "List of commands:"
-					help_message += f"\n\n{example_prefix} help:"
-					help_message += f"\n> Gives descriptions of how to use all of this bot's commands"
-					help_message += f"\n\n{example_prefix} leave:"
-					help_message += f"\n> Makes the bot leave the voice channel it's currently in"
-					help_message += f"\n\n{example_prefix} stfu:"
-					help_message += f"\n> Makes the bot shut up until you re-enable it with the activate command"
-					help_message += f"\n\n{example_prefix} activate:"
-					help_message += f"\n> Allows the bot to join channels randomly again after being disabled by the stfu command"
-					help_message += f"\n\n{example_prefix} on?:"
-					help_message += f"\n> Bot will tell you if it is currently enabled or disabled"
-					help_message += f"\n\n{example_prefix} add {{file attatchment(s)}}:"
-					help_message += f"\n> If you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
-					help_message += f"\n\n{example_prefix} remove {{file name(s)}}:"
-					help_message += f"\n> Removes any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
-					help_message += f"\n\n{example_prefix} rename {{file name}} {{new name}}:"
-					help_message += f"\n> Renames a file in this server's sound list (requires a role called \"Random Sound Bot Adder\")"
-					help_message += f"\n\n{example_prefix} list:"
-					help_message += f"\n> Sends all of the sound files that this server is using"
-					help_message += f"\n\n{example_prefix} give {{file name(s)}}:"
-					help_message += f"\n> Sends sound files from the server"
-					help_message += f"\n\n{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:"
-					help_message += f"\n> Changes the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
-					help_message += f"\n\n{example_prefix} timer?:"
-					help_message += f"\n> Tells you the time range for how often the bot will randomly join"
-					help_message += f"\n\n{example_prefix} reset:"
-					help_message += f"\n> Resets the bot's waiting time to join (useful for making it so you don't have to wait for a long previous timer setting to finish running for it to start joining at a faster frequency)"
-					help_message += f"\n\n{example_prefix} play {{file name}}:"
-					help_message += f"\n> Makes the bot join your voice channel and play the sound you input"
-					await message.reply(help_message)
+					help_info = f"{example_prefix} help {{command name (optional)}}:"
+					help_info += f"\n> Gives descriptions of how to use all or one of this bot's commands"
+					leave_info = f"{example_prefix} leave:"
+					leave_info += f"\n> Makes the bot leave the voice channel it's currently in"
+					stfu_info = f"{example_prefix} stfu:"
+					stfu_info += f"\n> Makes the bot shut up until you re-enable it with the \"activate\" command"
+					activate_info = f"{example_prefix} activate:"
+					activate_info += f"\n> Allows the bot to join channels randomly again after being disabled by the \"stfu\" command"
+					onq_info = f"{example_prefix} on?:"
+					onq_info += f"\n> Bot will tell you if it is currently enabled or disabled in your server"
+					add_info = f"{example_prefix} add {{file attatchment(s)}}:"
+					add_info += f"\n> If you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play"
+					remove_info = f"{example_prefix} remove {{file name(s)}}:"
+					remove_info += f"\n> Deletes any files listed from this server's sound list"
+					rename_info = f"{example_prefix} rename {{file name}} {{new name}}:"
+					rename_info += f"\n> Renames a file in this server's sound list"
+					list_info = f"{example_prefix} list:"
+					list_info += f"\n> Sends all of the sound files that this server has to use"
+					give_info = f"{example_prefix} give {{file name(s)}}:"
+					give_info += f"\n> Sends copies of sound files that are being used on this server"
+					timer_info = f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:"
+					timer_info += f"\n> Changes the frequency of when the bot joins channels"
+					timerq_info = f"{example_prefix} timer?:"
+					timerq_info += f"\n> Tells you the time range for how often the bot will randomly join"
+					reset_info = f"{example_prefix} reset:"
+					reset_info += f"\n> Resets the bot's waiting time to join"
+					play_info = f"{example_prefix} play {{file name}}:"
+					play_info += f"\n> Makes the bot join your voice channel and play the sound you input"
+					
+					# returns a string that lists info about every command
+					def get_help_message():
+						help_message = "List of commands"
+						help_message += f"\n\n{help_info}"
+						help_message += f"\n\n{leave_info}"
+						help_message += f"\n\n{stfu_info}"
+						help_message += f"\n\n{activate_info}"
+						help_message += f"\n\n{onq_info}"
+						help_message += f"\n\n{add_info}"
+						help_message += f"\n\n{remove_info}"
+						help_message += f"\n\n{rename_info}"
+						help_message += f"\n\n{list_info}"
+						help_message += f"\n\n{give_info}"
+						help_message += f"\n\n{timer_info}"
+						help_message += f"\n\n{timerq_info}"
+						help_message += f"\n\n{reset_info}"
+						help_message += f"\n\n{play_info}"
+						help_message += f"\n\nType \"{example_prefix} help {{command name}}\" for examples and more info about a command"
+						return help_message
+
+					# if there is an argument to the help command
+					if len(command) > 2:
+						# reply with info about the command in the argument
+						if command[2].lower() == "help":
+							help_info += "\n> Examples:"
+							help_info += f"\n> {example_prefix} help"
+							help_info += f"\n> {example_prefix} help stfu"
+							help_info += f"\n> {example_prefix} help timer"
+							await message.reply(help_info)
+						elif command[2].lower() == "leave":
+							leave_info += "\n> Example:"
+							leave_info += f"\n> {example_prefix} leave"
+							await message.reply(leave_info)
+						elif command[2].lower() == "stfu":
+							stfu_info += "\n> Example:"
+							stfu_info += f"\n> {example_prefix} stfu"
+							await message.reply(stfu_info)
+						elif command[2].lower() == "activate":
+							activate_info += "\n> Example:"
+							activate_info += f"\n> {example_prefix} activate"
+							await message.reply(activate_info)
+						elif command[2].lower() == "on?":
+							onq_info += "\n> Example:"
+							onq_info += f"\n> {example_prefix} on?"
+							await message.reply(onq_info)
+						elif command[2].lower() == "add":
+							add_info += "\n> In order for this command to work:"
+							add_info += "\n> The attached files must be in the same message as the command"
+							add_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
+							add_info += "\n> Examples:"
+							add_info += f"\n> {example_prefix} add {{attached file: example_file.mp3}}"
+							add_info += f"\n> {example_prefix} add {{attached file: example_file_1.wav}} {{attached file: example_file_2.mp3}}"
+							await message.reply(add_info)
+						elif command[2].lower() == "remove":
+							remove_info += "\n> In order for this command to work, the user must have a role with the name \"Random Sound Bot Remover\" in the server"
+							remove_info += "\n> Examples:"
+							remove_info += f"\n> {example_prefix} remove example_file.mp3"
+							remove_info += f"\n> {example_prefix} remove example_file_1.wav example_file_2.mp3"
+							await message.reply(remove_info)
+						elif command[2].lower() == "rename":
+							rename_info += "\n> In order for this command to work, the user must have a role with the name \"Random Sound Bot Adder\" in the server"
+							rename_info += "\n> Examples:"
+							rename_info += f"\n> {example_prefix} rename old_file_name.mp3 new_file_name.mp3"
+							rename_info += f"\n> {example_prefix} rename old_file_name.wav new_file_name.wav"
+							await message.reply(rename_info)
+						elif command[2].lower() == "list":
+							list_info += "\n> Example:"
+							list_info += f"\n> {example_prefix} list"
+							await message.reply(list_info)
+						elif command[2].lower() == "give":
+							give_info += "\n> Examples:"
+							give_info += f"\n> {example_prefix} give example_file.mp3"
+							give_info += f"\n> {example_prefix} give example_file_1.wav example_file_2.mp3"
+							await message.reply(give_info)
+						elif command[2].lower() == "timer":
+							timer_info += "\n> Arguments must either be a positive number of seconds, or in colon format"
+							timer_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
+							timer_info += "\n> This command does not automatically reset the bot's current countdown to join"
+							timer_info += "\n> In other words, this command will not take effect until either the next time the bot joins, or the \"reset\" command is used"
+							timer_info += "\n> Examples:"
+							timer_info += f"\n> {example_prefix} timer 60 120"
+							timer_info += f"\n> {example_prefix} timer 0:30:0 1:0:0"
+							timer_info += f"\n> {example_prefix} timer 0:0:30 3600"
+							await message.reply(timer_info)
+						elif command[2].lower() == "timer?":
+							timerq_info += "\n> Example:"
+							timerq_info += f"\n> {example_prefix} timer?"
+							await message.reply(timerq_info)
+						elif command[2].lower() == "reset":
+							reset_info += "\n> Use this command after using the \"timer\" command if you want the new frequency you inputted to take effect before the next time the bot joins a channel"
+							reset_info += "\n> Example:"
+							reset_info += f"\n> {example_prefix} reset"
+							await message.reply(reset_info)
+						elif command[2].lower() == "play":
+							play_info += "\n> Examples:"
+							play_info += f"\n> {example_prefix} play example_file.mp3"
+							play_info += f"\n> {example_prefix} play example_file.wav"
+							await message.reply(play_info)
+						# otherwise reply with info about every command
+						else:
+							await message.reply(get_help_message())
+					# if there are no arguments
+					else:
+						# reply with info about every command
+						await message.reply(get_help_message())
+				else:
+					await react_with_x(message)
 			# if leave command
 			elif command[1].lower() == "leave":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
