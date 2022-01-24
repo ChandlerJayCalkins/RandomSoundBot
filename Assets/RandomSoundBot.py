@@ -170,9 +170,9 @@ async def on_message(message):
 					activate_info = f"{example_prefix} activate:"
 					activate_info += f"\n> Allows the bot to join channels randomly again after being disabled by the \"stfu\" command"
 					onq_info = f"{example_prefix} on?:"
-					onq_info += f"\n> Bot will tell you if it is currently enabled or disabled in your server"
+					onq_info += f"\n> Tells you if the bot is currently enabled or disabled in your server"
 					add_info = f"{example_prefix} add {{file attatchment(s)}}:"
-					add_info += f"\n> If you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play"
+					add_info += f"\n> Adds sounds to this server's sound list if you attach mp3 or wav files"
 					remove_info = f"{example_prefix} remove {{file name(s)}}:"
 					remove_info += f"\n> Deletes any files listed from this server's sound list"
 					rename_info = f"{example_prefix} rename {{file name}} {{new name}}:"
@@ -188,7 +188,7 @@ async def on_message(message):
 					reset_info = f"{example_prefix} reset:"
 					reset_info += f"\n> Resets the bot's waiting time to join"
 					play_info = f"{example_prefix} play {{file name}}:"
-					play_info += f"\n> Makes the bot join your voice channel and play the sound you input"
+					play_info += f"\n> Makes the bot join your voice channel and play a sound from this server's sound list that you input"
 					
 					# returns a string that lists info about every command
 					def get_help_message():
@@ -250,7 +250,10 @@ async def on_message(message):
 							remove_info += f"\n> {example_prefix} remove example_file_1.wav example_file_2.mp3"
 							await message.reply(remove_info)
 						elif command[2].lower() == "rename":
-							rename_info += "\n> In order for this command to work, the user must have a role with the name \"Random Sound Bot Adder\" in the server"
+							rename_info += "\n> In order for this command to work:"
+							rename_info += "\n> The file extension of the new name must match the file extension of the old name"
+							rename_info += "\n> The new file name must not contain any slashes or backslashes"
+							rename_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							rename_info += "\n> Examples:"
 							rename_info += f"\n> {example_prefix} rename old_file_name.mp3 new_file_name.mp3"
 							rename_info += f"\n> {example_prefix} rename old_file_name.wav new_file_name.wav"
@@ -349,8 +352,8 @@ async def on_message(message):
 					errors = []
 					# check each file in the message
 					for file in message.attachments:
-						# if the file is an mp3 or wav file and doesn't contain a "../" in the name (for security redundancy)
-						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "../" in file.filename:
+						# if the file is an mp3 or wav file and doesn't contain a "/" or "\" in the name (for security redundancy)
+						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "/" in file.filename and not "\\" in file.filename:
 							# save the file to the directory of the server the message was from
 							await file.save(f"{sound_dir}/{file.filename}")
 						# if the file couldn't be saved, add it to the error list
@@ -375,8 +378,8 @@ async def on_message(message):
 					# go and remove each file in the arguments
 					for file in command[2:]:
 						filepath = f"{sound_dir}/{file}"
-						# if the argument doesn't contain "/" (for security redundancy) and the file exists
-						if not "/" in file and os.path.isfile(filepath):
+						# if the argument doesn't contain "/" or "\" (for security redundancy) and the file exists
+						if not "/" in file and not "\\" in file and os.path.isfile(filepath):
 							# delete the file
 							os.remove(filepath)
 						else:
@@ -397,8 +400,8 @@ async def on_message(message):
 				# if the person has the role that allows them to use this command and the command has enough arguments
 				if any(role.name == adder_role for role in message.author.roles) and len(command) > 3:
 					old_dir = f"{sound_dir}/{command[2]}"
-					# if the file exists, the arguments don't contain "/" (for security redundancy), and the new name has an mp3 or wav file extension
-					if os.path.isfile(old_dir) and not "/" in command[2] and not "/" in command[3] and (command[3].endswith(".mp3") or command[3].endswith(".wav")):
+					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), and the new name has an mp3 or wav file extension that matches the old file name extension
+					if os.path.isfile(old_dir) and not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3] and (command[2].endswith(".mp3") and (command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))):
 						# rename the file and react with a check
 						new_dir = f"{sound_dir}/{command[3]}"
 						os.rename(old_dir, new_dir)
@@ -531,8 +534,8 @@ async def on_message(message):
 				if message.author.voice and active_in_guild[message.guild] and len(command) > 2 and not (voice_client and voice_client.is_connected()) and v_perms.connect and v_perms.speak:
 					channel = message.author.voice.channel
 					sound_directory = f"{sound_dir}/{command[2]}"
-					# if the argument doesn't contain "/" (for security redundancy) and the file in the argument exists
-					if not "/" in command[2] and os.path.isfile(sound_directory):
+					# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
+					if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_directory):
 						# connect and play the audio
 						voice = await channel.connect()
 						voice.play(FFmpegPCMAudio(sound_directory))
