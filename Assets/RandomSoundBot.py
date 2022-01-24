@@ -49,8 +49,8 @@ async def on_ready():
 async def start_in_server(guild):
 	# sets up its variable that keeps track of whether it's enabled or not
 	active_in_guild[guild] = True
-	# sets the default frequency of the bot joining channels to 1 min - 3 hours
-	timer_for_guild[guild] = [60, 10_801]
+	# sets the default frequency of the bot joining channels to 1 min - 2 hours
+	timer_for_guild[guild] = [60, 7200]
 	# creates a task for the bot to start running in for that server
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
@@ -64,7 +64,7 @@ async def join_loop(guild):
 	# message that the bot sends right before it starts playing sounds
 	warning_message = "XBOX LIVE"
 	while active_in_guild[guild]:
-		# waits random amount of time as specified by what the server sets it to (1 min - 3 hours default)
+		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
 		# gets a list of all voice channels with people in them currently
 		populated_channels = get_populated_vcs(guild)
@@ -157,24 +157,38 @@ async def on_message(message):
 			# if help command
 			if command[1].lower() == "help":
 				# if the bot has permission to send messages in this channel
-				if (perms.send_messages):
+				if perms.send_messages:
 					# send descriptions of how to use all of the commands
-					example_prefix = f"\n`@{client.user.name}`"
+					example_prefix = f"`@{client.user.name}`"
 					help_message = "List of commands:"
-					help_message += f"{example_prefix} help:\n\tGives descriptions of how to use all of this bot's commands"
-					help_message += f"{example_prefix} leave:\n\tMakes the bot leave the voice channel it's currently in"
-					help_message += f"{example_prefix} stfu:\n\tMakes the bot shut up until you re-enable it with the activate command"
-					help_message += f"{example_prefix} activate:\n\tAllows the bot to join channels randomly again after being disabled by the stfu command"
-					help_message += f"{example_prefix} on?:\n\tBot will tell you if it is currently enabled or disabled"
-					help_message += f"{example_prefix} add {{file attatchment(s)}}:\n\tIf you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
-					help_message += f"{example_prefix} remove {{file name(s)}}:\n\tRemoves any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
-					help_message += f"{example_prefix} rename {{file name}} {{new name}}:\n\tRenames a file in this server's sound list (requires a role called \"Random Sound Bot Adder\")"
-					help_message += f"{example_prefix} list:\n\tSends all of the sound files that this server is using"
-					help_message += f"{example_prefix} give {{file name(s)}}:\n\tSends sound files from the server"
-					help_message += f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:\n\tChanges the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
-					help_message += f"{example_prefix} timer?:\n\tTells you the time range for how often the bot will randomly join"
-					help_message += f"{example_prefix} reset:\n\tResets the bot's waiting time to join (useful for making it so you don't have to wait for a long previous timer setting to finish running for it to start joining at a faster frequency)"
-					help_message += f"{example_prefix} play {{file name}}:\n\tMakes the bot join your voice channel and play the sound you input"
+					help_message += f"\n\n{example_prefix} help:"
+					help_message += f"\n> Gives descriptions of how to use all of this bot's commands"
+					help_message += f"\n\n{example_prefix} leave:"
+					help_message += f"\n> Makes the bot leave the voice channel it's currently in"
+					help_message += f"\n\n{example_prefix} stfu:"
+					help_message += f"\n> Makes the bot shut up until you re-enable it with the activate command"
+					help_message += f"\n\n{example_prefix} activate:"
+					help_message += f"\n> Allows the bot to join channels randomly again after being disabled by the stfu command"
+					help_message += f"\n\n{example_prefix} on?:"
+					help_message += f"\n> Bot will tell you if it is currently enabled or disabled"
+					help_message += f"\n\n{example_prefix} add {{file attatchment(s)}}:"
+					help_message += f"\n> If you attatch an mp3 or wav file with this command, the bot will add it to this server's list of sounds it can play (Requires a role called \"Random Sound Bot Adder\")"
+					help_message += f"\n\n{example_prefix} remove {{file name(s)}}:"
+					help_message += f"\n> Removes any files listed from this server's sound list (Requires a role called \"Random Sound Bot Remover\")"
+					help_message += f"\n\n{example_prefix} rename {{file name}} {{new name}}:"
+					help_message += f"\n> Renames a file in this server's sound list (requires a role called \"Random Sound Bot Adder\")"
+					help_message += f"\n\n{example_prefix} list:"
+					help_message += f"\n> Sends all of the sound files that this server is using"
+					help_message += f"\n\n{example_prefix} give {{file name(s)}}:"
+					help_message += f"\n> Sends sound files from the server"
+					help_message += f"\n\n{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:"
+					help_message += f"\n> Changes the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
+					help_message += f"\n\n{example_prefix} timer?:"
+					help_message += f"\n> Tells you the time range for how often the bot will randomly join"
+					help_message += f"\n\n{example_prefix} reset:"
+					help_message += f"\n> Resets the bot's waiting time to join (useful for making it so you don't have to wait for a long previous timer setting to finish running for it to start joining at a faster frequency)"
+					help_message += f"\n\n{example_prefix} play {{file name}}:"
+					help_message += f"\n> Makes the bot join your voice channel and play the sound you input"
 					await message.reply(help_message)
 			# if leave command
 			elif command[1].lower() == "leave":
