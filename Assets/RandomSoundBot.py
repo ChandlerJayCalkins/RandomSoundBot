@@ -147,12 +147,12 @@ async def on_message(message):
 	# if the message has the command prefix and is not a dm
 	if message.content.startswith(prefix) and message.guild:
 		command = message.content.split()
-		adder_role = "Random Sound Bot Adder"
-		remover_role = "Random Sound Bot Remover"
-		sound_dir = f"Sounds/server_{message.guild.id}"
-		perms = message.channel.permissions_for(message.guild.me)
 		# if the command has any arguments
 		if len(command) > 1:
+			adder_role = "Random Sound Bot Adder"
+			remover_role = "Random Sound Bot Remover"
+			sound_dir = f"Sounds/server_{message.guild.id}"
+			perms = message.channel.permissions_for(message.guild.me)
 			global active
 			# if help command
 			if command[1].lower() == "help":
@@ -172,6 +172,7 @@ async def on_message(message):
 					help_message += f"{example_prefix} list:\n\tSends all of the sound files that this server is using"
 					help_message += f"{example_prefix} give {{file name(s)}}:\n\tSends sound files from the server"
 					help_message += f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:\n\tChanges the frequency of when the bot joins channels (arguments must be either a positive integer (seconds) or in colon format (hrs:min:sec or min:sec))"
+					help_message += f"{example_prefix} timer?:\n\tTells you the time range for how often the bot will randomly join"
 					help_message += f"{example_prefix} reset:\n\tResets the bot's waiting time to join (useful for making it so you don't have to wait for a long previous timer setting to finish running for it to start joining at a faster frequency)"
 					help_message += f"{example_prefix} play {{file name}}:\n\tMakes the bot join your voice channel and play the sound you input"
 					await message.reply(help_message)
@@ -344,7 +345,7 @@ async def on_message(message):
 								# if the argument is not in colon format, stop
 								for n in range(0, len(time)):
 									try:
-										time[n] = int(time[n])
+										time[n] = float(time[n])
 									except:
 										return
 								# if the argument has 2 values
@@ -365,7 +366,7 @@ async def on_message(message):
 					min = await process_args(command[2])
 					max = await process_args(command[3])
 					# double check to make sure min and max timers are valid
-					if (type(min) is float or type(min) is int) and (type(max) is float or type(max) is int):
+					if type(min) is float and type(max) is float:
 						# makes sure the min is not larger than the max
 						if min <= max:
 							timer_for_guild[message.guild][0] = min
@@ -376,6 +377,20 @@ async def on_message(message):
 							await react_with_x(message)
 					else:
 						await react_with_x(message)
+				else:
+					await react_with_x(message)
+			# if timer? command
+			elif command[1].lower() == "timer?":
+				# if the bot has permission to send messages in the channel of the command
+				if perms.send_messages:
+					# reply with the bot's join frequency for that server
+					min_hrs = int(timer_for_guild[message.guild][0] // 3600)
+					min_min = int(timer_for_guild[message.guild][0] // 60 % 60)
+					min_sec = float(timer_for_guild[message.guild][0] % 60)
+					max_hrs = int(timer_for_guild[message.guild][1] // 3600)
+					max_min = int(timer_for_guild[message.guild][1] // 60 % 60)
+					max_sec = float((timer_for_guild[message.guild][1] - 1) % 60)
+					await message.reply(f"Bot will join every `{min_hrs} hours {min_min} mins {min_sec} secs` to `{max_hrs} hours {max_min} mins {max_sec} secs`")
 				else:
 					await react_with_x(message)
 			# if reset command
