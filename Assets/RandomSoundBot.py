@@ -51,7 +51,7 @@ async def start_in_server(guild):
 	# sets up its variable that keeps track of whether it's enabled or not
 	active_in_guild[guild] = True
 	# sets the default frequency of the bot joining channels to 1 min - 2 hours
-	timer_for_guild[guild] = [60, 7200]
+	timer_for_guild[guild] = [60, 7201]
 	# creates a task for the bot to start running in for that server
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
@@ -224,10 +224,12 @@ async def on_message(message):
 							leave_info += f"\n> {example_prefix} leave"
 							await message.reply(leave_info)
 						elif command[2].lower() == "stfu":
+							stfu_info += "\n> Note: This command will reset the bot's waiting time to join a channel"
 							stfu_info += "\n> Example:"
 							stfu_info += f"\n> {example_prefix} stfu"
 							await message.reply(stfu_info)
 						elif command[2].lower() == "activate":
+							activate_info += "\n> Note: The \"stfu\" command resets the bot's waiting time to join a channel"
 							activate_info += "\n> Example:"
 							activate_info += f"\n> {example_prefix} activate"
 							await message.reply(activate_info)
@@ -318,6 +320,8 @@ async def on_message(message):
 				if active_in_guild[message.guild]:
 					# disable the bot in that server
 					active_in_guild[message.guild] = False
+					# stop join loop for server
+					task_for_guild[message.guild].cancel()
 					# if the bot is connected to a channel in that server, then leave
 					voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 					if voice_client and voice_client.is_connected():
@@ -335,7 +339,7 @@ async def on_message(message):
 					# enable the bot in that server
 					active_in_guild[message.guild] = True
 					# recreate a task for that server
-					client.loop.create_task(join_loop(message.guild))
+					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
 					# reacts to message with a checkmark emoji when done
 					await react_with_check(message)
 				# if bot is already enabled
@@ -525,9 +529,10 @@ async def on_message(message):
 					min_hrs = int(timer_for_guild[message.guild][0] // 3600)
 					min_min = int(timer_for_guild[message.guild][0] // 60 % 60)
 					min_sec = timer_for_guild[message.guild][0] % 60
-					max_hrs = int(timer_for_guild[message.guild][1] // 3600)
-					max_min = int(timer_for_guild[message.guild][1] // 60 % 60)
-					max_sec = (timer_for_guild[message.guild][1] - 1) % 60
+					max_tmp = timer_for_guild[message.guild][1] - 1
+					max_hrs = int(max_tmp // 3600)
+					max_min = int(max_tmp // 60 % 60)
+					max_sec = (max_tmp) % 60
 					# reply with bot join frequency
 					await message.reply(f"Bot will join every `{min_hrs} hours {min_min} mins {min_sec} secs` to `{max_hrs} hours {max_min} mins {max_sec} secs`")
 				else:
