@@ -289,6 +289,8 @@ async def on_message(message):
 							reset_info += f"\n> {example_prefix} reset"
 							await message.reply(reset_info)
 						elif command[2].lower() == "play":
+							play_info += "\n> If the user is in a voice channel when this command is used, the bot will join the user's voice channel"
+							play_info += "\n> If the user is not in a voice channel when this command is used, the bot will pick a random channel with people in it to join"
 							play_info += "\n> Examples:"
 							play_info += f"\n> {example_prefix} play example_file.mp3"
 							play_info += f"\n> {example_prefix} play example_file.wav"
@@ -539,22 +541,38 @@ async def on_message(message):
 			# if play command
 			elif command[1].lower() == "play":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-				v_perms = message.author.voice.channel.permissions_for(message.guild.me)
-				# if the author is in a channel, the bot is enabled in the server, there are arguments, the bot isn't already in a voice channel, and the bot has permission to join and speak in the channel
-				if message.author.voice and active_in_guild[message.guild] and len(command) > 2 and not (voice_client and voice_client.is_connected()) and v_perms.connect and v_perms.speak:
-					channel = message.author.voice.channel
-					sound_directory = f"{sound_dir}/{command[2]}"
-					# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
-					if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_directory):
-						# connect and play the audio
-						voice = await channel.connect()
-						voice.play(FFmpegPCMAudio(sound_directory))
-						while voice.is_playing():
-							await asyncio.sleep(0.1)
-						await asyncio.sleep(1)
-						# disconnect when done playing
-						if message.guild.voice_client:
-							await message.guild.voice_client.disconnect()
+				# if the bot is enabled in the server, there are arguments, the bot isn't already in a voice channel, and the bot has permission to join and speak in the channel
+				if active_in_guild[message.guild] and len(command) > 2 and not (voice_client and voice_client.is_connected()):
+					channel = None
+					v_perms = None
+					# if the author is in a voice channel
+					if message.author.voice:
+						# prepare to join their channel
+						channel = message.author.voice.channel
+						v_perms = channel.permissions_for(channel.guild.me)
+					# if the author is not in a voice channel
+					else:
+						# pick a random populated voice channel to join in that server
+						populated_channels = get_populated_vcs(message.guild)
+						if len(populated_channels) > 0:
+							channel = random.choice(populated_channels)
+							v_perms = channel.permissions_for(channel.guild.me)
+					# if the bot has a channel to join that they are allowed to join and speak in
+					if channel and v_perms and v_perms.connect and v_perms.speak:
+						sound_directory = f"{sound_dir}/{command[2]}"
+						# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
+						if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_directory):
+							# connect and play the audio
+							voice = await channel.connect()
+							voice.play(FFmpegPCMAudio(sound_directory))
+							while voice.is_playing():
+								await asyncio.sleep(0.1)
+							await asyncio.sleep(1)
+							# disconnect when done playing
+							if message.guild.voice_client:
+								await message.guild.voice_client.disconnect()
+						else:
+							await react_with_x(message)
 					else:
 						await react_with_x(message)
 				else:
