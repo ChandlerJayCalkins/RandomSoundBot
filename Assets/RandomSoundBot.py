@@ -32,6 +32,9 @@ timer_for_guild = {}
 # keeps track of currently running task for each server
 task_for_guild = {}
 
+# keeps track of timed stfu and activate commands
+waiter_for_guild = {}
+
 # called as soon as the bot is fully online and operational
 @client.event
 async def on_ready():
@@ -52,6 +55,8 @@ async def start_in_server(guild):
 	active_in_guild[guild] = True
 	# sets the default frequency of the bot joining channels to 1 min - 2 hours
 	timer_for_guild[guild] = [60, 7201]
+	# declares a spot in the waiter dictionary for this server
+	waiter_for_guild[guild] = None
 	# creates a task for the bot to start running in for that server
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
@@ -165,10 +170,10 @@ async def on_message(message):
 					help_info += f"\n> Gives descriptions of how to use all or one of this bot's commands"
 					leave_info = f"{example_prefix} leave:"
 					leave_info += f"\n> Makes the bot leave the voice channel it's currently in"
-					stfu_info = f"{example_prefix} stfu:"
-					stfu_info += f"\n> Makes the bot shut up until you re-enable it with the \"activate\" command"
-					activate_info = f"{example_prefix} activate:"
-					activate_info += f"\n> Allows the bot to join channels randomly again after being disabled by the \"stfu\" command"
+					stfu_info = f"{example_prefix} stfu {{time (optional)}}:"
+					stfu_info += f"\n> Makes the bot shut up and stop joining channels (for a certain amount of time or until manually re-enabled)"
+					activate_info = f"{example_prefix} activate {{time (optional)}}:"
+					activate_info += f"\n> Enables the bot to randomly join channels (for a certain amount of time or until manually disabled)"
 					onq_info = f"{example_prefix} on?:"
 					onq_info += f"\n> Tells you if the bot is currently enabled or disabled in your server"
 					add_info = f"{example_prefix} add {{file attatchment(s)}}:"
@@ -214,6 +219,9 @@ async def on_message(message):
 					if len(command) > 2:
 						# reply with info about the command in the argument
 						if command[2].lower() == "help":
+							help_info += "\n> If this command is not given any arguments, it will list brief descriptions of all commands this bot has"
+							help_info += "\n> If this command is given the name of a command as an argument, it will list some more info about the command along with some examples"
+							help_info += "\n> (As you've likely already found out)"
 							help_info += "\n> Examples:"
 							help_info += f"\n> {example_prefix} help"
 							help_info += f"\n> {example_prefix} help stfu"
@@ -224,14 +232,28 @@ async def on_message(message):
 							leave_info += f"\n> {example_prefix} leave"
 							await message.reply(leave_info)
 						elif command[2].lower() == "stfu":
-							stfu_info += "\n> Note: This command will reset the bot's waiting time to join a channel"
-							stfu_info += "\n> Example:"
+							stfu_info += "\n> If this command is given a time argument, it will be disabled for that much time, and then re-enable itself after the time has expired"
+							stfu_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+							stfu_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
+							stfu_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used"
+							stfu_info += "\n> To re-enable the bot, either use the \"activate\" command, or use this command again with an argument for how long until it re-enables"
+							stfu_info += "\n> Note: This command will reset the bot's waiting time to join a channel (like the reset command)"
+							stfu_info += "\n> Examples:"
 							stfu_info += f"\n> {example_prefix} stfu"
+							stfu_info += f"\n> {example_prefix} stfu 60"
+							stfu_info += f"\n> {example_prefix} stfu 0:30:0"
 							await message.reply(stfu_info)
 						elif command[2].lower() == "activate":
-							activate_info += "\n> Note: The \"stfu\" command resets the bot's waiting time to join a channel"
-							activate_info += "\n> Example:"
+							activate_info += "\n> If this command is given a time argument, it will stay activated for that much time, and then disable itself after the time has expired"
+							activate_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+							activate_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
+							activate_info += "\n> If this command is not given any arguments, the bot will stay activated until another command is used"
+							activate_info += "\n> To disable the bot, either use the \"stfu\" command, or use this command again with an argument for how long until it should disable"
+							activate_info += "\n> Note: When the bot reactivates after being disabled, its waiting time to join a channel will have been reset (like the reset command)"
+							activate_info += "\n> Examples:"
 							activate_info += f"\n> {example_prefix} activate"
+							activate_info += f"\n> {example_prefix} activate 60"
+							activate_info += f"\n> {example_prefix} activate 0:30:0"
 							await message.reply(activate_info)
 						elif command[2].lower() == "on?":
 							onq_info += "\n> Example:"
@@ -263,16 +285,18 @@ async def on_message(message):
 							rename_info += f"\n> {example_prefix} rename old_file_name.wav new_file_name.wav"
 							await message.reply(rename_info)
 						elif command[2].lower() == "list":
+							list_info += "\n> If there enough characters in the list (>2000), this command will take several replies to complete"
 							list_info += "\n> Example:"
 							list_info += f"\n> {example_prefix} list"
 							await message.reply(list_info)
 						elif command[2].lower() == "give":
+							give_info += "\n> If you request more than 10 files, this command will take multiple replies to complete"
 							give_info += "\n> Examples:"
 							give_info += f"\n> {example_prefix} give example_file.mp3"
 							give_info += f"\n> {example_prefix} give example_file_1.wav example_file_2.mp3"
 							await message.reply(give_info)
 						elif command[2].lower() == "timer":
-							timer_info += "\n> Arguments must either be a positive number of seconds, or in colon format"
+							timer_info += "\n> Arguments must either be a positive number of seconds, or be in colon format"
 							timer_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
 							timer_info += "\n> This command does not automatically reset the bot's current countdown to join"
 							timer_info += "\n> In other words, this command will not take effect until either the next time the bot joins, or the \"reset\" command is used"
@@ -322,16 +346,25 @@ async def on_message(message):
 					active_in_guild[message.guild] = False
 					# stop join loop for server
 					task_for_guild[message.guild].cancel()
+					# if the bot is currently waiting for an sftu or activate command to finish, cancel it
+					if waiter_for_guild[message.guild]:
+						waiter_for_guild[message.guild].cancel()
 					# if the bot is connected to a channel in that server, then leave
 					voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 					if voice_client and voice_client.is_connected():
 						voice_client.stop()
-					# reacts to message with a checkmark emoji when done
-					await react_with_check(message)
-				# if bot is already disabled
+				# if the command has any arguments
+				if len(command) > 2:
+					time = process_time(command[2])
+					# if the argument can be processed as a number of seconds
+					if not time is None:
+						# start a countdown until the active flag gets flipped for this server
+						waiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip(message.guild, time))
+						await react_with_check(message)
+					else:
+						await react_with_x(message)
 				else:
-					# react to message with a X emoji
-					await react_with_x(message)
+					await react_with_check(message)
 			# if activate command
 			elif command[1].lower() == "activate":
 				# if the bot is not currently active
@@ -340,11 +373,21 @@ async def on_message(message):
 					active_in_guild[message.guild] = True
 					# recreate a task for that server
 					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
-					# reacts to message with a checkmark emoji when done
-					await react_with_check(message)
-				# if bot is already enabled
+					# if the bot is currently waiting for an sftu or activate command to finish, cancel it
+					if waiter_for_guild[message.guild]:
+						waiter_for_guild[message.guild].cancel()
+				# if the command has any arguments
+				if len(command) > 2:
+					time = process_time(command[2])
+					# if the argument can be processed as a number of seconds
+					if not time is None:
+						# start a countdown until the active flat gets flipped for this server
+						waiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip(message.guild, time))
+						await react_with_check(message)
+					else:
+						await react_with_x(message)
 				else:
-					await react_with_x(message)
+					await react_with_check(message)
 			# if on? command
 			elif command[1].lower() == "on?":
 				# if the bot is enabled, react with checkmark
@@ -475,38 +518,9 @@ async def on_message(message):
 			elif command[1].lower() == "timer":
 				# if there are enough arguments
 				if len(command) > 3:
-					async def process_args(arg):
-						time = None
-						# if the argument is a number, get it
-						try:
-							time = float(arg)
-						# otherwise, see if it's in colon format
-						except:
-							if ":" in arg:
-								time = arg.split(":", 2)
-								# if the argument is not in colon format, stop
-								for n in range(0, len(time)):
-									try:
-										time[n] = float(time[n])
-									except:
-										return
-								# if the argument has 2 values
-								if len(time) == 2:
-									time[0] *= 60
-									time = time[0] + time[1]
-								# if the argument has 3 values
-								elif len(time) == 3:
-									time[0] *= 3600
-									time[1] *= 60
-									time = time[0] + time[1] + time[2]
-								else:
-									return
-							else:
-								return
-						return time
 					# try to get the numbers from each argument
-					min = await process_args(command[2])
-					max = await process_args(command[3])
+					min = process_time(command[2])
+					max = process_time(command[3])
 					# double check to make sure min and max timers are valid
 					if type(min) is float and type(max) is float:
 						# makes sure the min is not larger than the max
@@ -607,6 +621,42 @@ def get_file_error_message(errors):
 			error_message += f"\n{s}"
 		error_message += "```"
 		return error_message
+
+# takes a string either of a positive number of a time in colon format and returns a float number of seconds
+def process_time(arg):
+	time = None
+	# if the argument is a number, get it
+	try:
+		time = float(arg)
+		# otherwise, see if it's in colon format
+	except:
+		if ":" in arg:
+			time = arg.split(":", 2)
+			# if the argument is not in colon format, stop
+			for n in range(0, len(time)):
+				try:
+					time[n] = float(time[n])
+				except:
+					return
+			# if the argument has 2 values
+			if len(time) == 2:
+				time[0] *= 60
+				time = time[0] + time[1]
+			# if the argument has 3 values
+			elif len(time) == 3:
+				time[0] *= 3600
+				time[1] *= 60
+				time = time[0] + time[1] + time[2]
+			else:
+				return
+		else:
+			return
+	return time
+
+# starts a timer until the active flat for a server gets flipped
+async def wait_to_flip(guild, time):
+	await asyncio.sleep(time)
+	active_in_guild[guild] = not active_in_guild[guild]
 
 # sets up the bot every time it joins a new server while running
 @client.event
