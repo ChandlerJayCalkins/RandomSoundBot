@@ -529,6 +529,7 @@ async def on_message(message):
 					min_hrs = int(timer_for_guild[message.guild][0] // 3600)
 					min_min = int(timer_for_guild[message.guild][0] // 60 % 60)
 					min_sec = timer_for_guild[message.guild][0] % 60
+					# temp variable for max frequency since it needs to have 1 second subtracted from it
 					max_tmp = timer_for_guild[message.guild][1] - 1
 					max_hrs = int(max_tmp // 3600)
 					max_min = int(max_tmp // 60 % 60)
