@@ -1,5 +1,32 @@
 # Discord bot that joins a random channel with people in it at random times, plays a random sound, then leaves
 
+# Permissions Required:
+# Read Messages/View Channels
+# Send Messages
+# Attach Files
+# Read Message History
+# Add Reactions
+# Connect
+# Speak
+
+# Recommended Permissions (for testing new features):
+# Change Nickname
+# Read Messages / View Channels
+# Send Messages
+# Create Public Threads
+# Create Private Threads
+# Send Messages in Threads
+# Embed Links
+# Attach Files
+# Read Message History
+# Use External Emojis
+# Use External Stickers
+# Add Reactions
+# Use Slash Commands
+# Connect
+# Speak
+# Video
+
 from audioop import add
 import discord
 from discord import FFmpegPCMAudio
@@ -661,7 +688,7 @@ async def wait_to_flip(guild, time):
 # sets up the bot every time it joins a new server while running
 @client.event
 async def on_guild_join(guild):
-	start_in_server(guild)
+	await start_in_server(guild)
 
 # runs the bot
 client.run(token)
