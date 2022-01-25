@@ -238,6 +238,7 @@ async def on_message(message):
 						elif command[2].lower() == "add":
 							add_info += "\n> In order for this command to work:"
 							add_info += "\n> The attached files must be in the same message as the command"
+							add_info += "\n> The attached files must have names that are less than 128 characters long"
 							add_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							add_info += "\n> Examples:"
 							add_info += f"\n> {example_prefix} add {{attached file: example_file.mp3}}"
@@ -253,6 +254,7 @@ async def on_message(message):
 							rename_info += "\n> In order for this command to work:"
 							rename_info += "\n> The file extension of the new name must match the file extension of the old name"
 							rename_info += "\n> The new file name must not contain any slashes or backslashes"
+							rename_info += "\n> The new file name must be less than 128 characters long"
 							rename_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							rename_info += "\n> Examples:"
 							rename_info += f"\n> {example_prefix} rename old_file_name.mp3 new_file_name.mp3"
@@ -352,8 +354,8 @@ async def on_message(message):
 					errors = []
 					# check each file in the message
 					for file in message.attachments:
-						# if the file is an mp3 or wav file and doesn't contain a "/" or "\" in the name (for security redundancy)
-						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "/" in file.filename and not "\\" in file.filename:
+						# if the file is an mp3 or wav file, the file doesn't contain a "/" or "\" in the name (for security redundancy), and the file name is less than 128 characters long
+						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "/" in file.filename and not "\\" in file.filename and len(file.filename) < 128:
 							# save the file to the directory of the server the message was from
 							await file.save(f"{sound_dir}/{file.filename}")
 						# if the file couldn't be saved, add it to the error list
@@ -400,8 +402,8 @@ async def on_message(message):
 				# if the person has the role that allows them to use this command and the command has enough arguments
 				if any(role.name == adder_role for role in message.author.roles) and len(command) > 3:
 					old_dir = f"{sound_dir}/{command[2]}"
-					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), and the new name has an mp3 or wav file extension that matches the old file name extension
-					if os.path.isfile(old_dir) and not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3] and (command[2].endswith(".mp3") and (command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))):
+					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, and the new file name is less than 128 characters long
+					if os.path.isfile(old_dir) and not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3] and (command[2].endswith(".mp3") and (command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))) and len(command[3] < 128):
 						# rename the file and react with a check
 						new_dir = f"{sound_dir}/{command[3]}"
 						os.rename(old_dir, new_dir)
@@ -418,11 +420,19 @@ async def on_message(message):
 					sounds = get_sounds(f"{sound_dir}")
 					# sort the sounds in alphabetical order
 					sounds.sort()
-					sound_message = f"```List of sounds for {message.guild.name}:"
+					sound_message = f"```List of sounds for {message.guild.name[:128]}:"
+					# put all of the sounds into a single string
 					for s in sounds:
+						# if the message length is at the max discord will allow
+						if len(f"{sound_message}\n{s}") >= 1997:
+							# reply with the current string of files
+							sound_message += "```"
+							await message.reply(sound_message)
+							# start the string over and continue to add more
+							sound_message = f"```List of sounds for {message.guild.name[:128]} continued:"
 						sound_message += f"\n{s}"
 					sound_message += "```"
-					# send the list of sound files for the server
+					# reply with the list of sound files for the server
 					await message.reply(sound_message)
 				else:
 					react_with_x(message)
