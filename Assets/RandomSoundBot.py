@@ -88,10 +88,94 @@ async def start_in_server(guild):
 		os.mkdir(setting_directory)
 	if not os.path.isdir(log_directory):
 		os.mkdir(log_directory)
-	# sets up its variable that keeps track of whether it's enabled or not
-	active_in_guild[guild] = True
-	# sets the default frequency of the bot joining channels to 1 min - 2 hours
-	timer_for_guild[guild] = [60, 7201]
+	settings_file = f"{setting_directory}/Settings.set"
+	# bot is enabled by default
+	default_active = True
+	# default random time to join is 1 min - 2 hours
+	default_min_timer = 60.0
+	default_max_timer = 7201.0
+	# if the server alread has a settings file, then read from it
+	if os.path.isfile(settings_file):
+		settings = []
+		num_of_settings = 4
+		error_detected = False
+		with open(settings_file, "r") as file:
+			settings = file.readlines()
+		# if the active setting is in the file
+		if len(settings) > 1 and settings[1].startswith("active: "):
+			# read the active setting
+			try:
+				active_in_guild[guild] = settings[1][8:].lower() == "true"
+			# remake the active setting
+			except:
+				active_in_guild[guild] = default_active
+				settings[1] = f"active: {default_active}\n"
+				error_detected = True
+		# remake the active setting
+		else:
+			active_in_guild[guild] = default_active
+			if len(settings) > 1:
+				settings[1] = f"active: {default_active}\n"
+			else:
+				settings += f"active: {default_active}\n"
+			error_detected = True
+		timer_for_guild[guild] = [default_min_timer, default_max_timer]
+		# if the min timer setting is in the file
+		if len(settings) > 2 and settings[2].startswith("min_timer: "):
+			# read the min timer setting
+			try:
+				timer_for_guild[guild][0] = float(settings[2][11:])
+			# remake the min timer setting
+			except:
+				timer_for_guild[guild][0] = default_min_timer
+				settings[2] = f"min_timer: {default_min_timer}\n"
+				error_detected = True
+		# remake the min timer setting
+		else:
+			timer_for_guild[0] = default_min_timer
+			if len(settings) > 2:
+				settings[2] = f"min_timer: {default_min_timer}\n"
+			else:
+				settings += f"min_timer: {default_min_timer}\n"
+			error_detected = True
+		# if the max timer setting is in the file
+		if len(settings) > 3 and settings[3].startswith("max_timer: "):
+			# read the max timer setting
+			try:
+				timer_for_guild[guild][1] = float(settings[3][11:])
+			# remake the max timer setting
+			except:
+				timer_for_guild[guild][1] = default_max_timer
+				settings[3] = f"max_timer: {default_max_timer}"
+				error_detected = True
+		# remake the max timer setting
+		else:
+			timer_for_guild[guild][1] = default_max_timer
+			if len(settings) > 3:
+				settings[3] = f"max_timer: {default_max_timer}"
+			else:
+				settings += f"max_timer: {default_max_timer}"
+			error_detected = True
+		# if any settings had to be remade or there are extra lines in the settings file
+		if error_detected or len(settings) > num_of_settings:
+			# write the corrections to the settings file
+			with open(settings_file, "w") as file:
+				# cut the extra lines off of the settings file
+				settings = settings[:num_of_settings+1]
+				settings_str = ""
+				for s in settings:
+					settings_str += s
+				file.write(settings_str)
+	# if no settings file exists
+	else:
+		# create a new one with default values
+		with open(settings_file, "a") as file:
+			file.write(f"server: {guild.id}")
+			file.write(f"\nactive: {default_active}")
+			file.write(f"\nmin_timer: {default_min_timer}")
+			file.write(f"\nmax_timer: {default_max_timer}")
+			active_in_guild[guild] = default_active
+			timer_for_guild[guild] = [default_min_timer, default_max_timer]
 	# declares a spot in the waiter dictionary for this server
 	waiter_for_guild[guild] = None
 	# creates a task for the bot to start running in for that server
@@ -379,6 +463,8 @@ async def on_message(message):
 				if active_in_guild[message.guild]:
 					# disable the bot in that server
 					active_in_guild[message.guild] = False
+					# changes the active setting in the server's settings file
+					file_active_setting(message.guild, False)
 					# stop join loop for server
 					task_for_guild[message.guild].cancel()
 					# if the bot is currently waiting for an sftu or activate command to finish, cancel it
@@ -406,6 +492,8 @@ async def on_message(message):
 				if not active_in_guild[message.guild]:
 					# enable the bot in that server
 					active_in_guild[message.guild] = True
+					# changes the active setting in the server's settings file
+					file_active_setting(message.guild, True)
 					# recreate a task for that server
 					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
 					# if the bot is currently waiting for an sftu or activate command to finish, cancel it
@@ -486,8 +574,10 @@ async def on_message(message):
 				# if the person has the role that allows them to use this command and the command has enough arguments
 				if any(role.name == adder_role for role in message.author.roles) and len(command) > 3:
 					old_dir = f"{sound_dir}/{command[2]}"
+					no_slashes = not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3]
+					correct_file_extensions = (command[2].endswith(".mp3") and command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))
 					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, and the new file name is less than 128 characters long
-					if os.path.isfile(old_dir) and not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3] and (command[2].endswith(".mp3") and (command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))) and len(command[3] < 128):
+					if os.path.isfile(old_dir) and no_slashes and correct_file_extensions and len(command[3] < 128):
 						# rename the file and react with a check
 						new_dir = f"{sound_dir}/{command[3]}"
 						os.rename(old_dir, new_dir)
@@ -560,8 +650,12 @@ async def on_message(message):
 					if type(min) is float and type(max) is float:
 						# makes sure the min is not larger than the max
 						if min <= max:
+							max += 1 # adds 1 since the randrange function uses a delimiter rather than an upper bound
+							# set the min and max timer values for the server
 							timer_for_guild[message.guild][0] = min
-							timer_for_guild[message.guild][1] = max + 1 # adds 1 since the randrange function uses a delimiter rather than an upper bound
+							timer_for_guild[message.guild][1] = max
+							# change the min and max timer values for the server in the server's settings file
+							file_timer_settings(message.guild, min, max)
 							# reacts to message with a checkmark emoji when done
 							await react_with_check(message)
 						else:
@@ -633,6 +727,40 @@ async def on_message(message):
 				else:
 					await react_with_x(message)
 
+# changes the active setting for a server in the server's settings file
+def file_active_setting(guild, value):
+	settings_file = f"Settings/server_{guild.id}/Settings.set"
+	settings = []
+	with open(settings_file, "r") as file:
+		settings = file.readlines()
+	if len(settings) > 1 and settings[1].startswith("active: "):
+		settings[1] = f"active: {value}\n"
+	else:
+		settings[1] = f"active: {value}\n"
+	settings_str = ""
+	for s in settings:
+		settings_str += s
+	with open(settings_file, "w") as file:
+		file.write(settings_str)
+
+# changes the timer settings for a server in the server's settings file
+def file_timer_settings(guild, min, max):
+	settings_file = f"Settings/server_{guild.id}/Settings.set"
+	settings = []
+	with open(settings_file, "r") as file:
+		settings = file.readlines()
+	if len(settings) > 3 and settings[2].startswith("min_timer: ") and settings[3].startswith("max_timer: "):
+		settings[2] = f"min_timer: {min}\n"
+		settings[3] = f"max_timer: {max}"
+	else:
+		settings[2] = f"min_timer: {min}\n"
+		settings[3] = f"max_timer: {max}"
+	settings_str = ""
+	for s in settings:
+		settings_str += s
+	with open(settings_file, "w") as file:
+		file.write(settings_str)
+
 # makes the bot react to a message with a checkmark emoji if it's able to
 async def react_with_check(message):
 	perms = message.channel.permissions_for(message.guild.me)
@@ -692,6 +820,7 @@ def process_time(arg):
 async def wait_to_flip(guild, time):
 	await asyncio.sleep(time)
 	active_in_guild[guild] = not active_in_guild[guild]
+	file_active_setting(guild, active_in_guild[guild])
 
 # sets up the bot every time it joins a new server while running
 @client.event
