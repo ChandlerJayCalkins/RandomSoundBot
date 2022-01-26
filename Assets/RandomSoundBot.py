@@ -106,10 +106,10 @@ async def start_in_server(guild):
 		with open(settings_file, "r") as file:
 			settings = file.readlines()
 		# if the enabled setting is in the file
-		if len(settings) > 1 and settings[1].startswith("enabled: "):
+		if len(settings) > 1 and settings[1].startswith("enabled:"):
 			# read the enabled setting
 			try:
-				enabled_in_guild[guild] = settings[1][9:].strip().lower() == "true"
+				enabled_in_guild[guild] = settings[1][8:].strip().lower() == "true"
 			# remake the enabled setting
 			except:
 				enabled_in_guild[guild] = default_enabled
@@ -125,10 +125,10 @@ async def start_in_server(guild):
 			error_detected = True
 		timer_for_guild[guild] = [default_min_timer, default_max_timer]
 		# if the min timer setting is in the file
-		if len(settings) > 2 and settings[2].startswith("min_timer: "):
+		if len(settings) > 2 and settings[2].startswith("min_timer:"):
 			# read the min timer setting
 			try:
-				timer_for_guild[guild][0] = float(settings[2][11:])
+				timer_for_guild[guild][0] = float(settings[2][10:].strip())
 			# remake the min timer setting
 			except:
 				timer_for_guild[guild][0] = default_min_timer
@@ -143,10 +143,10 @@ async def start_in_server(guild):
 				settings += f"min_timer: {default_min_timer}\n"
 			error_detected = True
 		# if the max timer setting is in the file
-		if len(settings) > 3 and settings[3].startswith("max_timer: "):
+		if len(settings) > 3 and settings[3].startswith("max_timer:"):
 			# read the max timer setting
 			try:
-				timer_for_guild[guild][1] = float(settings[3][11:])
+				timer_for_guild[guild][1] = float(settings[3][10:].strip())
 			# remake the max timer setting
 			except:
 				timer_for_guild[guild][1] = default_max_timer
@@ -744,10 +744,10 @@ def file_enabled_setting(guild, value):
 	settings = []
 	with open(settings_file, "r") as file:
 		settings = file.readlines()
-	if len(settings) > 1 and settings[1].startswith("enabled: "):
+	if len(settings) > 1:
 		settings[1] = f"enabled: {value}\n"
 	else:
-		settings[1] = f"enabled: {value}\n"
+		settings += f"enabled: {value}\n"
 	settings_str = ""
 	for s in settings:
 		settings_str += s
@@ -760,12 +760,14 @@ def file_timer_settings(guild, min, max):
 	settings = []
 	with open(settings_file, "r") as file:
 		settings = file.readlines()
-	if len(settings) > 3 and settings[2].startswith("min_timer: ") and settings[3].startswith("max_timer: "):
+	if len(settings) > 2:
 		settings[2] = f"min_timer: {min}\n"
+	else:
+		settings += f"min_timer: {min}\n"
+	if len(settings) > 3:
 		settings[3] = f"max_timer: {max}\n"
 	else:
-		settings[2] = f"min_timer: {min}\n"
-		settings[3] = f"max_timer: {max}\n"
+		settings += f"max_timer: {max}\n"
 	settings_str = ""
 	for s in settings:
 		settings_str += s
