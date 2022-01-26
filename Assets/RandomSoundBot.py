@@ -27,6 +27,10 @@
 # Speak
 # Video
 
+# TODO
+# 1. Make it so the bot can log events and activity
+# 2. Make it so the bot can have a different join message for each server it's in, and have users disable / enable the join message
+
 import discord
 from discord import FFmpegPCMAudio
 import asyncio
