@@ -50,7 +50,7 @@ with open("BotToken.txt", "r") as f:
 prefix = ""
 
 # keeps track of which servers the bot is enabled in and which ones it's not
-active_in_guild = {}
+enabled_in_guild = {}
 
 # keeps track of how frequently the bot joins in each server
 timer_for_guild = {}
@@ -58,7 +58,7 @@ timer_for_guild = {}
 # keeps track of currently running task for each server
 task_for_guild = {}
 
-# keeps track of timed stfu and activate commands
+# keeps track of timed stfu and on commands
 waiter_for_guild = {}
 
 # called as soon as the bot is fully online and operational
@@ -90,7 +90,7 @@ async def start_in_server(guild):
 		os.mkdir(log_directory)
 	settings_file = f"{setting_directory}/Settings.set"
 	# bot is enabled by default
-	default_active = True
+	default_enabled = True
 	# default random time to join is 1 min - 2 hours
 	default_min_timer = 60.0
 	default_max_timer = 7201.0
@@ -101,23 +101,23 @@ async def start_in_server(guild):
 		error_detected = False
 		with open(settings_file, "r") as file:
 			settings = file.readlines()
-		# if the active setting is in the file
-		if len(settings) > 1 and settings[1].startswith("active: "):
-			# read the active setting
+		# if the enabled setting is in the file
+		if len(settings) > 1 and settings[1].startswith("enabled: "):
+			# read the enabled setting
 			try:
-				active_in_guild[guild] = settings[1][8:].lower() == "true"
-			# remake the active setting
+				enabled_in_guild[guild] = settings[1][8:].lower() == "true"
+			# remake the enabled setting
 			except:
-				active_in_guild[guild] = default_active
-				settings[1] = f"active: {default_active}\n"
+				enabled_in_guild[guild] = default_enabled
+				settings[1] = f"enabled: {default_enabled}\n"
 				error_detected = True
-		# remake the active setting
+		# remake the enabled setting
 		else:
-			active_in_guild[guild] = default_active
+			enabled_in_guild[guild] = default_enabled
 			if len(settings) > 1:
-				settings[1] = f"active: {default_active}\n"
+				settings[1] = f"enabled: {default_enabled}\n"
 			else:
-				settings += f"active: {default_active}\n"
+				settings += f"enabled: {default_enabled}\n"
 			error_detected = True
 		timer_for_guild[guild] = [default_min_timer, default_max_timer]
 		# if the min timer setting is in the file
@@ -171,10 +171,10 @@ async def start_in_server(guild):
 		# create a new one with default values
 		with open(settings_file, "a") as file:
 			file.write(f"server: {guild.id}")
-			file.write(f"\nactive: {default_active}")
+			file.write(f"\nenabled: {default_enabled}")
 			file.write(f"\nmin_timer: {default_min_timer}")
 			file.write(f"\nmax_timer: {default_max_timer}")
-			active_in_guild[guild] = default_active
+			enabled_in_guild[guild] = default_enabled
 			timer_for_guild[guild] = [default_min_timer, default_max_timer]
 	# declares a spot in the waiter dictionary for this server
 	waiter_for_guild[guild] = None
@@ -188,7 +188,7 @@ async def join_loop(guild):
 	sound_directory = f"Sounds/server_{guild.id}"
 	# message that the bot sends right before it starts playing sounds
 	join_message = "**XBOX LIVE**"
-	while active_in_guild[guild]:
+	while enabled_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
 		# gets a list of all voice channels with people in them currently
@@ -277,7 +277,6 @@ async def on_message(message):
 			remover_role = "Random Sound Bot Remover"
 			sound_dir = f"Sounds/server_{message.guild.id}"
 			perms = message.channel.permissions_for(message.guild.me)
-			global active
 			# if help command
 			if command[1].lower() == "help":
 				# if the bot has permission to send messages in this channel
@@ -289,9 +288,9 @@ async def on_message(message):
 					leave_info = f"{example_prefix} leave:"
 					leave_info += f"\n> Makes the bot leave the voice channel it's currently in"
 					stfu_info = f"{example_prefix} stfu {{time (optional)}}:"
-					stfu_info += f"\n> Makes the bot shut up and stop joining channels (for a certain amount of time or until manually re-enabled)"
-					activate_info = f"{example_prefix} activate {{time (optional)}}:"
-					activate_info += f"\n> Enables the bot to randomly join channels (for a certain amount of time or until manually disabled)"
+					stfu_info += f"\n> Makes the bot shut up and stop joining channels (for a certain amount of time if given an argument)"
+					on_info = f"{example_prefix} on {{time (optional)}}:"
+					on_info += f"\n> Enables the bot to randomly join channels (for a certain amount of time if given an argument)"
 					onq_info = f"{example_prefix} on?:"
 					onq_info += f"\n> Tells you if the bot is currently enabled or disabled in your server"
 					add_info = f"{example_prefix} add {{file attatchment(s)}}:"
@@ -319,7 +318,7 @@ async def on_message(message):
 						help_message += f"\n\n{help_info}"
 						help_message += f"\n\n{leave_info}"
 						help_message += f"\n\n{stfu_info}"
-						help_message += f"\n\n{activate_info}"
+						help_message += f"\n\n{on_info}"
 						help_message += f"\n\n{onq_info}"
 						help_message += f"\n\n{add_info}"
 						help_message += f"\n\n{remove_info}"
@@ -354,25 +353,25 @@ async def on_message(message):
 							stfu_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
 							stfu_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
 							stfu_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used"
-							stfu_info += "\n> To re-enable the bot, either use the \"activate\" command, or use this command again with an argument for how long until it re-enables"
+							stfu_info += "\n> To re-enable the bot, either use the \"on\" command, or use this command again with an argument for how long until it re-enables"
 							stfu_info += "\n> Note: This command will reset the bot's waiting time to join a channel (like the reset command)"
 							stfu_info += "\n> Examples:"
 							stfu_info += f"\n> {example_prefix} stfu"
 							stfu_info += f"\n> {example_prefix} stfu 60"
 							stfu_info += f"\n> {example_prefix} stfu 0:30:0"
 							await message.reply(stfu_info)
-						elif command[2].lower() == "activate":
-							activate_info += "\n> If this command is given a time argument, it will stay activated for that much time, and then disable itself after the time has expired"
-							activate_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							activate_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
-							activate_info += "\n> If this command is not given any arguments, the bot will stay activated until another command is used"
-							activate_info += "\n> To disable the bot, either use the \"stfu\" command, or use this command again with an argument for how long until it should disable"
-							activate_info += "\n> Note: When the bot reactivates after being disabled, its waiting time to join a channel will have been reset (like the reset command)"
-							activate_info += "\n> Examples:"
-							activate_info += f"\n> {example_prefix} activate"
-							activate_info += f"\n> {example_prefix} activate 60"
-							activate_info += f"\n> {example_prefix} activate 0:30:0"
-							await message.reply(activate_info)
+						elif command[2].lower() == "on":
+							on_info += "\n> If this command is given a time argument, it will stay enabled for that much time, and then disable itself after the time has expired"
+							on_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+							on_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
+							on_info += "\n> If this command is not given any arguments, the bot will stay enabled until another command is used"
+							on_info += "\n> To disable the bot, either use the \"stfu\" command, or use this command again with an argument for how long until it should disable"
+							on_info += "\n> Note: When the bot re-enables after being disabled, its waiting time to join a channel will have been reset (like the reset command)"
+							on_info += "\n> Examples:"
+							on_info += f"\n> {example_prefix} on"
+							on_info += f"\n> {example_prefix} on 60"
+							on_info += f"\n> {example_prefix} on 0:30:0"
+							await message.reply(on_info)
 						elif command[2].lower() == "on?":
 							onq_info += "\n> Example:"
 							onq_info += f"\n> {example_prefix} on?"
@@ -459,15 +458,15 @@ async def on_message(message):
 					await react_with_x(message)
 			# if stfu (shut the fuck up) command
 			elif command[1].lower() == "stfu":
-				# if the bot is currently active
-				if active_in_guild[message.guild]:
+				# if the bot is currently enabled
+				if enabled_in_guild[message.guild]:
 					# disable the bot in that server
-					active_in_guild[message.guild] = False
-					# changes the active setting in the server's settings file
-					file_active_setting(message.guild, False)
+					enabled_in_guild[message.guild] = False
+					# changes the enabled setting in the server's settings file
+					file_enabled_setting(message.guild, False)
 					# stop join loop for server
 					task_for_guild[message.guild].cancel()
-					# if the bot is currently waiting for an sftu or activate command to finish, cancel it
+					# if the bot is currently waiting for an sftu or on command to finish, cancel it
 					if waiter_for_guild[message.guild]:
 						waiter_for_guild[message.guild].cancel()
 					# if the bot is connected to a channel in that server, then leave
@@ -479,24 +478,24 @@ async def on_message(message):
 					time = process_time(command[2])
 					# if the argument can be processed as a number of seconds
 					if not time is None:
-						# start a countdown until the active flag gets flipped for this server
+						# start a countdown until the enabled flag gets flipped for this server
 						waiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip(message.guild, time))
 						await react_with_check(message)
 					else:
 						await react_with_x(message)
 				else:
 					await react_with_check(message)
-			# if activate command
-			elif command[1].lower() == "activate":
-				# if the bot is not currently active
-				if not active_in_guild[message.guild]:
+			# if on command
+			elif command[1].lower() == "on":
+				# if the bot is not currently enabled
+				if not enabled_in_guild[message.guild]:
 					# enable the bot in that server
-					active_in_guild[message.guild] = True
-					# changes the active setting in the server's settings file
-					file_active_setting(message.guild, True)
+					enabled_in_guild[message.guild] = True
+					# changes the enabled setting in the server's settings file
+					file_enabled_setting(message.guild, True)
 					# recreate a task for that server
 					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
-					# if the bot is currently waiting for an sftu or activate command to finish, cancel it
+					# if the bot is currently waiting for an sftu or on command to finish, cancel it
 					if waiter_for_guild[message.guild]:
 						waiter_for_guild[message.guild].cancel()
 				# if the command has any arguments
@@ -504,7 +503,7 @@ async def on_message(message):
 					time = process_time(command[2])
 					# if the argument can be processed as a number of seconds
 					if not time is None:
-						# start a countdown until the active flat gets flipped for this server
+						# start a countdown until the enabled flat gets flipped for this server
 						waiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip(message.guild, time))
 						await react_with_check(message)
 					else:
@@ -514,7 +513,7 @@ async def on_message(message):
 			# if on? command
 			elif command[1].lower() == "on?":
 				# if the bot is enabled, react with checkmark
-				if active_in_guild[message.guild]:
+				if enabled_in_guild[message.guild]:
 					await react_with_check(message)
 				# if the bot is off, react with X
 				else:
@@ -691,7 +690,7 @@ async def on_message(message):
 			elif command[1].lower() == "play":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 				# if the bot is enabled in the server, there are arguments, and the bot isn't already in a voice channel
-				if active_in_guild[message.guild] and len(command) > 2 and voice_client is None:
+				if enabled_in_guild[message.guild] and len(command) > 2 and voice_client is None:
 					channel = None
 					v_perms = None
 					# if the author is in a voice channel
@@ -727,16 +726,16 @@ async def on_message(message):
 				else:
 					await react_with_x(message)
 
-# changes the active setting for a server in the server's settings file
-def file_active_setting(guild, value):
+# changes the enabled setting for a server in the server's settings file
+def file_enabled_setting(guild, value):
 	settings_file = f"Settings/server_{guild.id}/Settings.set"
 	settings = []
 	with open(settings_file, "r") as file:
 		settings = file.readlines()
-	if len(settings) > 1 and settings[1].startswith("active: "):
-		settings[1] = f"active: {value}\n"
+	if len(settings) > 1 and settings[1].startswith("enabled: "):
+		settings[1] = f"enabled: {value}\n"
 	else:
-		settings[1] = f"active: {value}\n"
+		settings[1] = f"enabled: {value}\n"
 	settings_str = ""
 	for s in settings:
 		settings_str += s
@@ -816,11 +815,11 @@ def process_time(arg):
 			return
 	return time
 
-# starts a timer until the active flat for a server gets flipped
+# starts a timer until the enabled flat for a server gets flipped
 async def wait_to_flip(guild, time):
 	await asyncio.sleep(time)
-	active_in_guild[guild] = not active_in_guild[guild]
-	file_active_setting(guild, active_in_guild[guild])
+	enabled_in_guild[guild] = not enabled_in_guild[guild]
+	file_enabled_setting(guild, enabled_in_guild[guild])
 
 # sets up the bot every time it joins a new server while running
 @client.event
