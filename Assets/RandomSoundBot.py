@@ -77,6 +77,17 @@ async def on_ready():
 
 # sets up and starts running the bot in a server
 async def start_in_server(guild):
+	folder_name = f"server_{guild.id}"
+	sound_directory = f"Sounds/{folder_name}"
+	setting_directory = f"Settings/{folder_name}"
+	log_directory = f"Logs/{folder_name}"
+	# if the server does not have sound, setting, or log folders, then make whichever ones are missing
+	if not os.path.isdir(sound_directory):
+		os.mkdir(sound_directory)
+	if not os.path.isdir(setting_directory):
+		os.mkdir(setting_directory)
+	if not os.path.isdir(log_directory):
+		os.mkdir(log_directory)
 	# sets up its variable that keeps track of whether it's enabled or not
 	active_in_guild[guild] = True
 	# sets the default frequency of the bot joining channels to 1 min - 2 hours
@@ -91,10 +102,8 @@ async def start_in_server(guild):
 async def join_loop(guild):
 	# directory that the sound files are kept in
 	sound_directory = f"Sounds/server_{guild.id}"
-	if not os.path.isdir(sound_directory):
-		os.mkdir(sound_directory)
 	# message that the bot sends right before it starts playing sounds
-	warning_message = "**XBOX LIVE**"
+	join_message = "**XBOX LIVE**"
 	while active_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
@@ -122,8 +131,8 @@ async def join_loop(guild):
 				voice = await channel.connect()
 				# if there is a channel the bot can read + send in, and the last message wasn't a warning message, then send a warning message
 				last_message = text_channel.last_message
-				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == warning_message):
-					await text_channel.send(warning_message)
+				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == join_message):
+					await text_channel.send(join_message)
 				# play the file
 				voice.play(FFmpegPCMAudio(f"{sound_directory}/{sound}"))
 				# wait until bot is not playing anymore audio
