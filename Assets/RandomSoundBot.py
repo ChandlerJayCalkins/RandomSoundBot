@@ -105,7 +105,7 @@ async def start_in_server(guild):
 		if len(settings) > 1 and settings[1].startswith("enabled: "):
 			# read the enabled setting
 			try:
-				enabled_in_guild[guild] = settings[1][8:].lower() == "true"
+				enabled_in_guild[guild] = settings[1][9:].strip().lower() == "true"
 			# remake the enabled setting
 			except:
 				enabled_in_guild[guild] = default_enabled
@@ -146,15 +146,15 @@ async def start_in_server(guild):
 			# remake the max timer setting
 			except:
 				timer_for_guild[guild][1] = default_max_timer
-				settings[3] = f"max_timer: {default_max_timer}"
+				settings[3] = f"max_timer: {default_max_timer}\n"
 				error_detected = True
 		# remake the max timer setting
 		else:
 			timer_for_guild[guild][1] = default_max_timer
 			if len(settings) > 3:
-				settings[3] = f"max_timer: {default_max_timer}"
+				settings[3] = f"max_timer: {default_max_timer}\n"
 			else:
-				settings += f"max_timer: {default_max_timer}"
+				settings += f"max_timer: {default_max_timer}\n"
 			error_detected = True
 		# if any settings had to be remade or there are extra lines in the settings file
 		if error_detected or len(settings) > num_of_settings:
@@ -170,15 +170,15 @@ async def start_in_server(guild):
 	else:
 		# create a new one with default values
 		with open(settings_file, "a") as file:
-			file.write(f"server: {guild.id}")
-			file.write(f"\nenabled: {default_enabled}")
-			file.write(f"\nmin_timer: {default_min_timer}")
-			file.write(f"\nmax_timer: {default_max_timer}")
+			file.write(f"server: {guild.id}\n")
+			file.write(f"enabled: {default_enabled}\n")
+			file.write(f"min_timer: {default_min_timer}\n")
+			file.write(f"max_timer: {default_max_timer}\n")
 			enabled_in_guild[guild] = default_enabled
 			timer_for_guild[guild] = [default_min_timer, default_max_timer]
 	# declares a spot in the waiter dictionary for this server
 	waiter_for_guild[guild] = None
-	# creates a task for the bot to start running in for that server
+	# creates a task for the bot to start running in for that server so multiple while loops can be running at once without the program freezing
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
 # waits a random amount of time, joins a voice channel channel, plays a random sound, then leaves and repeats
@@ -186,8 +186,11 @@ async def start_in_server(guild):
 async def join_loop(guild):
 	# directory that the sound files are kept in
 	sound_directory = f"Sounds/server_{guild.id}"
-	# message that the bot sends right before it starts playing sounds
-	join_message = "**XBOX LIVE**"
+	# pulls the message that the bot sends right before it joins a channel from a file
+	join_message = ""
+	with open("JoinMessage.txt", "r") as file:
+		# makes sure the message is less than 2000 characters because of the discord limit
+		join_message = file.read(2000).strip()
 	while enabled_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
@@ -203,7 +206,7 @@ async def join_loop(guild):
 			# prints the sound it's about to play
 			print(f"Now playing in {guild.name}: {sound}")
 			# get top channel bot is allowed to read and send messages in for the server
-			text_channel = get_warning_channel(guild)
+			text_channel = get_join_channel(guild)
 			# if the sound file exists
 			if os.path.isfile(sound_file):
 				voice_client = discord.utils.get(client.voice_clients, guild=guild)
@@ -213,9 +216,10 @@ async def join_loop(guild):
 						await asyncio.sleep(0.1)
 				# join the channel
 				voice = await channel.connect()
-				# if there is a channel the bot can read + send in, and the last message wasn't a warning message, then send a warning message
+				# if there is a channel the bot can read + send in, the last message wasn't a join message, and there is a join message
 				last_message = text_channel.last_message
-				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == join_message):
+				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == join_message) and len(join_message) > 0:
+					# send a join message
 					await text_channel.send(join_message)
 				# play the file
 				voice.play(FFmpegPCMAudio(f"{sound_directory}/{sound}"))
@@ -255,7 +259,7 @@ def get_sounds(directory):
 	return sounds
 
 # gets the top channel the bot is allowed to read and message in
-def get_warning_channel(guild):
+def get_join_channel(guild):
 	# for each text channel in the server
 	for c in guild.text_channels:
 		perms = c.permissions_for(guild.me)
@@ -754,10 +758,10 @@ def file_timer_settings(guild, min, max):
 		settings = file.readlines()
 	if len(settings) > 3 and settings[2].startswith("min_timer: ") and settings[3].startswith("max_timer: "):
 		settings[2] = f"min_timer: {min}\n"
-		settings[3] = f"max_timer: {max}"
+		settings[3] = f"max_timer: {max}\n"
 	else:
 		settings[2] = f"min_timer: {min}\n"
-		settings[3] = f"max_timer: {max}"
+		settings[3] = f"max_timer: {max}\n"
 	settings_str = ""
 	for s in settings:
 		settings_str += s
