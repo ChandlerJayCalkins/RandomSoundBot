@@ -578,7 +578,8 @@ async def on_message(message):
 					old_dir = f"{sound_dir}/{command[2]}"
 					no_slashes = not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3]
 					correct_file_extensions = (command[2].endswith(".mp3") and command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))
-					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, and the new file name is less than 128 characters long
+					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, 
+					# and the new file name is less than 128 characters long
 					if os.path.isfile(old_dir) and no_slashes and correct_file_extensions and len(command[3] < 128):
 						# rename the file and react with a check
 						new_dir = f"{sound_dir}/{command[3]}"
