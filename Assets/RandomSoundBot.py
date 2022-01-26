@@ -359,6 +359,7 @@ async def on_message(message):
 							stfu_info += f"\n> {example_prefix} stfu"
 							stfu_info += f"\n> {example_prefix} stfu 60"
 							stfu_info += f"\n> {example_prefix} stfu 0:30:0"
+							stfu_info += f"\n> {example_prefix} stfu 0:120:0"
 							await message.reply(stfu_info)
 						elif command[2].lower() == "on":
 							on_info += "\n> If this command is given a time argument, it will stay enabled for that much time, and then disable itself after the time has expired"
@@ -371,6 +372,7 @@ async def on_message(message):
 							on_info += f"\n> {example_prefix} on"
 							on_info += f"\n> {example_prefix} on 60"
 							on_info += f"\n> {example_prefix} on 0:30:0"
+							on_info += f"\n> {example_prefix} on 0:120:0"
 							await message.reply(on_info)
 						elif command[2].lower() == "on?":
 							onq_info += "\n> Example:"
@@ -421,6 +423,7 @@ async def on_message(message):
 							timer_info += f"\n> {example_prefix} timer 60 120"
 							timer_info += f"\n> {example_prefix} timer 0:30:0 1:0:0"
 							timer_info += f"\n> {example_prefix} timer 0:0:30 3600"
+							timer_info += f"\n> {example_prefix} timer 0:0:0 0:90:0"
 							await message.reply(timer_info)
 						elif command[2].lower() == "timer?":
 							timerq_info += "\n> Example:"
