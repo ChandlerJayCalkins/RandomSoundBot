@@ -27,7 +27,6 @@
 # Speak
 # Video
 
-from audioop import add
 import discord
 from discord import FFmpegPCMAudio
 import asyncio
@@ -95,7 +94,7 @@ async def join_loop(guild):
 	if not os.path.isdir(sound_directory):
 		os.mkdir(sound_directory)
 	# message that the bot sends right before it starts playing sounds
-	warning_message = "XBOX LIVE"
+	warning_message = "**XBOX LIVE**"
 	while active_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
@@ -118,7 +117,6 @@ async def join_loop(guild):
 				# if the bot is already connected to a voice channel in this server, then wait until it leaves
 				if voice_client:
 					while voice_client.is_connected():
-						print("currently in while loop")
 						await asyncio.sleep(0.1)
 				# join the channel
 				voice = await channel.connect()
@@ -363,6 +361,7 @@ async def on_message(message):
 				# if the bot is connected to a channel in that server, then leave
 				if voice_client and voice_client.is_connected():
 					voice_client.stop()
+					await voice_client.disconnect()
 				else:
 					await react_with_x(message)
 			# if stfu (shut the fuck up) command
