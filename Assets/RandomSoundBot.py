@@ -29,6 +29,7 @@
 
 # TODO
 # 1. Make it so the bot can log events and activity
+# 2. Combine the stfu, on, alertoff, and alerton code into one function if reasonable
 
 from cgitb import enable
 import discord
@@ -344,45 +345,25 @@ async def on_message(message):
 					# define info for every command to reply with
 					example_prefix = f"`@{client.user.name}`"
 					help_info = f"{example_prefix} help {{command name (optional)}}:"
-					help_info += f"\n> Gives descriptions of how to use all or one of this bot's commands"
 					leave_info = f"{example_prefix} leave:"
-					leave_info += f"\n> Makes the bot leave the voice channel it's currently in"
 					stfu_info = f"{example_prefix} stfu {{time (optional)}}:"
-					stfu_info += f"\n> Makes the bot shut up and stop joining channels (for a certain amount of time if given an argument)"
 					on_info = f"{example_prefix} on {{time (optional)}}:"
-					on_info += f"\n> Enables the bot to randomly join channels (for a certain amount of time if given an argument)"
 					onq_info = f"{example_prefix} on?:"
-					onq_info += f"\n> Tells you if the bot is currently enabled or disabled in this server"
 					add_info = f"{example_prefix} add {{file attatchment(s)}}:"
-					add_info += f"\n> Adds sounds to this server's sound list if you attach mp3 or wav files"
 					remove_info = f"{example_prefix} remove {{file name(s)}}:"
-					remove_info += f"\n> Deletes any files listed from this server's sound list"
 					rename_info = f"{example_prefix} rename {{file name}} {{new name}}:"
-					rename_info += f"\n> Renames a file in this server's sound list"
 					list_info = f"{example_prefix} list:"
-					list_info += f"\n> Sends all of the sound files that this server has to use"
 					give_info = f"{example_prefix} give {{file name(s)}}:"
-					give_info += f"\n> Sends copies of sound files that are being used on this server"
 					timer_info = f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:"
-					timer_info += f"\n> Changes the frequency of when the bot joins channels"
 					timerq_info = f"{example_prefix} timer?:"
-					timerq_info += f"\n> Tells you the time range for how often the bot will randomly join"
 					reset_info = f"{example_prefix} reset:"
-					reset_info += f"\n> Resets the bot's waiting time to join"
 					play_info = f"{example_prefix} play {{file name}}:"
-					play_info += f"\n> Makes the bot join your voice channel and play a sound from this server's sound list that you input"
 					alertoff_info = f"{example_prefix} alertoff {{time (optional)}}:"
-					alertoff_info += f"\n> Disables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
 					alerton_info = f"{example_prefix} alerton {{time (optional)}}:"
-					alerton_info += f"\n> Enables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
 					alertonq_info = f"{example_prefix} alerton?:"
-					alertonq_info += f"\n> Tells you if the bot's alert messages are currently enabled or disabled in this server"
 					alert_info = f"{example_prefix} alert {{new alert message}}:"
-					alert_info += f"\n> Changes the alert message that the bot sends when it joins a channel randomly in this server"
 					alertq_info = f"{example_prefix} alert?:"
-					alertq_info += f"\n> Tells you what the bot's current alert message is for this server that it uses when it joins a channel randomly"
 					alertqf_info = f"{example_prefix} alert?f:"
-					alertqf_info += f"\n> Gives you the un-formatted, raw characters of the bot's current alert message for this server"
 					
 					# returns a string that lists info about every command
 					def get_help_message():
@@ -414,6 +395,7 @@ async def on_message(message):
 					if len(command) > 2:
 						# reply with info about the command in the argument
 						if command[2].lower() == "help":
+							help_info += "\n> Gives descriptions of how to use all or one of this bot's commands"
 							help_info += "\n> If this command is not given any arguments, it will list brief descriptions of all commands this bot has"
 							help_info += "\n> If this command is given the name of a command as an argument, it will list some more info about the command along with some examples"
 							help_info += "\n> (As you've likely already found out)"
@@ -423,10 +405,12 @@ async def on_message(message):
 							help_info += f"\n> {example_prefix} help timer"
 							await message.reply(help_info)
 						elif command[2].lower() == "leave":
+							leave_info += "\n> Makes the bot leave the voice channel it's currently in"
 							leave_info += "\n> Example:"
 							leave_info += f"\n> {example_prefix} leave"
 							await message.reply(leave_info)
 						elif command[2].lower() == "stfu":
+							stfu_info += "\n> Makes the bot shut up and stop joining channels (for a certain amount of time if given an argument)"
 							stfu_info += "\n> If this command is given a time argument, the bot will be disabled for that much time, and then re-enable itself after the time has expired"
 							stfu_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
 							stfu_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
@@ -442,6 +426,7 @@ async def on_message(message):
 							stfu_info += f"\n> {example_prefix} stfu 0:120"
 							await message.reply(stfu_info)
 						elif command[2].lower() == "on":
+							on_info += "\n> Enables the bot to randomly join channels (for a certain amount of time if given an argument)"
 							on_info += "\n> If this command is given a time argument, the bot will stay enabled for that much time, and then disable itself after the time has expired"
 							on_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
 							on_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
@@ -457,10 +442,12 @@ async def on_message(message):
 							on_info += f"\n> {example_prefix} on 0:120"
 							await message.reply(on_info)
 						elif command[2].lower() == "on?":
+							onq_info += "\n> Tells you if the bot is currently enabled or disabled in this server"
 							onq_info += "\n> Example:"
 							onq_info += f"\n> {example_prefix} on?"
 							await message.reply(onq_info)
 						elif command[2].lower() == "add":
+							add_info += "\n> Adds sounds to this server's sound list if you attach mp3 or wav files"
 							add_info += "\n> In order for this command to work:"
 							add_info += "\n> The attached files must be in the same message as the command"
 							add_info += "\n> The attached files must have names that are less than 128 characters long"
@@ -470,12 +457,14 @@ async def on_message(message):
 							add_info += f"\n> {example_prefix} add {{attached file: example_file_1.wav}} {{attached file: example_file_2.mp3}}"
 							await message.reply(add_info)
 						elif command[2].lower() == "remove":
+							remove_info += "\n> Deletes any files listed from this server's sound list"
 							remove_info += "\n> In order for this command to work, the user must have a role with the name \"Random Sound Bot Remover\" in the server"
 							remove_info += "\n> Examples:"
 							remove_info += f"\n> {example_prefix} remove example_file.mp3"
 							remove_info += f"\n> {example_prefix} remove example_file_1.wav example_file_2.mp3"
 							await message.reply(remove_info)
 						elif command[2].lower() == "rename":
+							rename_info += "\n> Renames a file in this server's sound list"
 							rename_info += "\n> In order for this command to work:"
 							rename_info += "\n> The file extension of the new name must match the file extension of the old name"
 							rename_info += "\n> The new file name must not contain any slashes or backslashes"
@@ -486,17 +475,20 @@ async def on_message(message):
 							rename_info += f"\n> {example_prefix} rename old_file_name.wav new_file_name.wav"
 							await message.reply(rename_info)
 						elif command[2].lower() == "list":
+							list_info += "\n> Sends all of the sound files that this server has to use"
 							list_info += "\n> If there enough characters in the list (>2000), this command will take several replies to complete"
 							list_info += "\n> Example:"
 							list_info += f"\n> {example_prefix} list"
 							await message.reply(list_info)
 						elif command[2].lower() == "give":
+							give_info += "\n> Sends copies of sound files that are being used on this server"
 							give_info += "\n> If you request more than 10 files, this command will take multiple replies to complete"
 							give_info += "\n> Examples:"
 							give_info += f"\n> {example_prefix} give example_file.mp3"
 							give_info += f"\n> {example_prefix} give example_file_1.wav example_file_2.mp3"
 							await message.reply(give_info)
 						elif command[2].lower() == "timer":
+							timer_info += "\n> Changes the frequency of when the bot joins channels"
 							timer_info += "\n> Arguments must either be a positive number of seconds, or be in colon format"
 							timer_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
 							timer_info += "\n> This command does not automatically reset the bot's current countdown to join"
@@ -510,15 +502,18 @@ async def on_message(message):
 							timer_info += f"\n> {example_prefix} timer 0 60:0"
 							await message.reply(timer_info)
 						elif command[2].lower() == "timer?":
+							timerq_info += "\n> Tells you the time range for how often the bot will randomly join"
 							timerq_info += "\n> Example:"
 							timerq_info += f"\n> {example_prefix} timer?"
 							await message.reply(timerq_info)
 						elif command[2].lower() == "reset":
+							reset_info += "\n> Resets the bot's waiting time to join"
 							reset_info += "\n> Use this command after using the \"timer\" command if you want the new frequency you inputted to take effect before the next time the bot joins a channel"
 							reset_info += "\n> Example:"
 							reset_info += f"\n> {example_prefix} reset"
 							await message.reply(reset_info)
 						elif command[2].lower() == "play":
+							play_info += "\n> Makes the bot join your voice channel and play a sound from this server's sound list that you input"
 							play_info += "\n> If the user is in a voice channel when this command is used, the bot will join the user's voice channel"
 							play_info += "\n> If the user is not in a voice channel when this command is used, the bot will pick a random channel with people in it to join"
 							play_info += "\n> Examples:"
@@ -526,6 +521,7 @@ async def on_message(message):
 							play_info += f"\n> {example_prefix} play example_file.wav"
 							await message.reply(play_info)
 						elif command[2].lower() == "alertoff":
+							alertoff_info += "\n> Disables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
 							alertoff_info += "\n> If this command is given a time argument, alert messages will be disabled for that much time, and then be re-enabled after the time has expired"
 							alertoff_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
 							alertoff_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
@@ -540,6 +536,7 @@ async def on_message(message):
 							alertoff_info += f"\n> {example_prefix} alertoff 0:120"
 							await message.reply(alertoff_info)
 						elif command[2].lower() == "alerton":
+							alerton_info += "\n> Enables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
 							alerton_info += "\n> If this command is given a time argument, alert messages will stay enabled for that much time, and then be disabled after the time has expired"
 							alerton_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
 							alerton_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
@@ -554,10 +551,12 @@ async def on_message(message):
 							alerton_info += f"\n> {example_prefix} alerton 0:120"
 							await message.reply(alerton_info)
 						elif command[2].lower() == "alerton?":
+							alertonq_info += "\n> Tells you if the bot's alert messages are currently enabled or disabled in this server"
 							alertonq_info += "\n> Example:"
 							alertonq_info += f"\n> {example_prefix} alerton?"
 							await message.reply(alertonq_info)
 						elif command[2].lower() == "alert":
+							alert_info += "\n> Changes the alert message that the bot sends when it joins a channel randomly in this server"
 							alert_info += "\n> Note: This command will only take the first 2000 characters of the input due to the discord message size limit"
 							alert_info += "\n> Examples:"
 							alert_info += f"\n> {example_prefix} alert New Alert Message"
@@ -565,12 +564,14 @@ async def on_message(message):
 							alert_info += f"\n> {example_prefix} alert **CHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOS**"
 							await message.reply(alert_info)
 						elif command[2].lower() == "alert?":
+							alertq_info += "\n> Tells you what the bot's current alert message is for this server that it uses when it joins a channel randomly"
 							alertq_info += "\n> Example:"
 							alertq_info += f"\n> {example_prefix} alert?"
 							await message.reply(alertq_info)
 						elif command[2].lower() == "alert?f":
+							alertqf_info += "\n> Gives you the un-formatted, raw characters of the bot's current alert message for this server"
 							alertqf_info += "\n> Note: This command may send out triple backticks (\"\\`\\`\\`\") in alert messages like this (\"\\\\\\`\\\\\\`\\\\\\`\")"
-							alertqf_info += "\n> This is due to the fact that the discord developers forgot that you have to make fully functioning escapes for formatting symbols"
+							alertqf_info += "\n> This is due to the fact that the discord developers forgot to make functioning escapes for the code block symbols"
 							alertqf_info += "\n> Example:"
 							alertqf_info += f"\n> {example_prefix} alert?f"
 							await message.reply(alertqf_info)
