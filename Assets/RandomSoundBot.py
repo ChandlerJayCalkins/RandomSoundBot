@@ -388,7 +388,7 @@ async def on_message(message):
 						help_message += f"\n\n{alert_info}"
 						help_message += f"\n\n{alertq_info}"
 						help_message += f"\n\n{alertqf_info}"
-						help_message += f"\n\nType \"{example_prefix} help {{command name}}\" for examples and more info about a command"
+						help_message += f"\n\nType \"{example_prefix} help {{command name}}\" for examples and more info about a command (Ex: \"{example_prefix} help timer\")"
 						return help_message
 
 					# if there is an argument to the help command
