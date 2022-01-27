@@ -200,7 +200,7 @@ async def start_in_server(guild):
 		if len(settings) > 5 and settings[5].startswith("alert:"):
 			# read the alert message setting
 			try:
-				alert_for_guild[guild] = settings[5][6:]
+				alert_for_guild[guild] = settings[5][6:].strip()
 			# remake the alert message setting
 			except:
 				alert_for_guild[guild] = default_alert
@@ -262,7 +262,7 @@ async def join_loop(guild):
 			# prints the sound it's about to play
 			print(f"Now playing in {guild.name}: {sound}")
 			# get top channel bot is allowed to read and send messages in for the server
-			text_channel = get_join_channel(guild)
+			text_channel = get_alert_channel(guild)
 			# if the sound file exists
 			if os.path.isfile(sound_file):
 				voice_client = discord.utils.get(client.voice_clients, guild=guild)
@@ -316,7 +316,7 @@ def get_sounds(directory):
 	return sounds
 
 # gets the top channel the bot is allowed to read and message in
-def get_join_channel(guild):
+def get_alert_channel(guild):
 	# for each text channel in the server
 	for c in guild.text_channels:
 		perms = c.permissions_for(guild.me)
