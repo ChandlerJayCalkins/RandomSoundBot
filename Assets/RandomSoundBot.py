@@ -29,8 +29,8 @@
 
 # TODO
 # 1. Make it so the bot can log events and activity
-# 2. Make it so the bot can have a different join message for each server it's in, and have users disable / enable the join message
 
+from cgitb import enable
 import discord
 from discord import FFmpegPCMAudio
 import asyncio
@@ -59,11 +59,20 @@ enabled_in_guild = {}
 # keeps track of how frequently the bot joins in each server
 timer_for_guild = {}
 
+# keeps track of whether or not the alert is enabled in each server
+alerton_for_guild = {}
+
+# keeps track of the message the bot sends when it randomly joins a channel for each server
+alert_for_guild = {}
+
 # keeps track of currently running task for each server
 task_for_guild = {}
 
 # keeps track of timed stfu and on commands
-waiter_for_guild = {}
+twaiter_for_guild = {}
+
+# keeps track of timed alerton and alertoff commands
+awaiter_for_guild = {}
 
 # called as soon as the bot is fully online and operational
 @client.event
@@ -98,10 +107,18 @@ async def start_in_server(guild):
 	# default random time to join is 1 min - 2 hours
 	default_min_timer = 60.0
 	default_max_timer = 7201.0
+	# bot's alert message is on by default
+	default_alerton = True
+	# default message that the bot sends when it joins a channel randomly
+	default_alert = ""
+	with open("DefaultAlert.txt", "r") as file:
+		default_alert = file.read(2000).strip()
 	# if the server alread has a settings file, then read from it
 	if os.path.isfile(settings_file):
 		settings = []
-		num_of_settings = 4
+		# expected size of settings
+		num_of_settings = 6
+		# flat to tell the bot to rewrite to the settings file if an error was found in it
 		error_detected = False
 		with open(settings_file, "r") as file:
 			settings = file.readlines()
@@ -121,7 +138,7 @@ async def start_in_server(guild):
 			if len(settings) > 1:
 				settings[1] = f"enabled: {default_enabled}\n"
 			else:
-				settings += f"enabled: {default_enabled}\n"
+				settings.append(f"enabled: {default_enabled}\n")
 			error_detected = True
 		timer_for_guild[guild] = [default_min_timer, default_max_timer]
 		# if the min timer setting is in the file
@@ -140,7 +157,7 @@ async def start_in_server(guild):
 			if len(settings) > 2:
 				settings[2] = f"min_timer: {default_min_timer}\n"
 			else:
-				settings += f"min_timer: {default_min_timer}\n"
+				settings.append(f"min_timer: {default_min_timer}\n")
 			error_detected = True
 		# if the max timer setting is in the file
 		if len(settings) > 3 and settings[3].startswith("max_timer:"):
@@ -158,7 +175,43 @@ async def start_in_server(guild):
 			if len(settings) > 3:
 				settings[3] = f"max_timer: {default_max_timer}\n"
 			else:
-				settings += f"max_timer: {default_max_timer}\n"
+				settings.append(f"max_timer: {default_max_timer}\n")
+			error_detected = True
+		# if the alert on setting is in the file
+		if len(settings) > 4 and settings[4].startswith("alert_on:"):
+			# read the alert on setting
+			try:
+				alerton_for_guild[guild] = settings[4][9:].strip().lower == "true"
+			# remake the alert on setting
+			except:
+				alerton_for_guild[guild] = default_alerton
+				settings[4] = f"alert_on: {default_alerton}\n"
+				error_detected = True
+		# remake the alert on setting
+		else:
+			alerton_for_guild[guild] = default_alerton
+			if len(settings) > 4:
+				settings[4] = f"alert_on: {default_alerton}\n"
+			else:
+				settings.append(f"alert_on: {default_alerton}\n")
+			error_detected = True
+		# if the alert message setting is in the file
+		if len(settings) > 5 and settings[5].startswith("alert:"):
+			# read the alert message setting
+			try:
+				alert_for_guild[guild] = settings[5][6:]
+			# remake the alert message setting
+			except:
+				alert_for_guild[guild] = default_alert
+				settings[5] = f"alert: {default_alert}\n"
+				error_detected = True
+		# remake the alert message setting
+		else:
+			alert_for_guild[guild] = default_alert
+			if len(settings) > 5:
+				settings[5] = f"alert: {default_alert}\n"
+			else:
+				settings.append(f"alert: {default_alert}\n")
 			error_detected = True
 		# if any settings had to be remade or there are extra lines in the settings file
 		if error_detected or len(settings) > num_of_settings:
@@ -178,10 +231,13 @@ async def start_in_server(guild):
 			file.write(f"enabled: {default_enabled}\n")
 			file.write(f"min_timer: {default_min_timer}\n")
 			file.write(f"max_timer: {default_max_timer}\n")
+			file.write(f"alert: {default_alert}\n")
 			enabled_in_guild[guild] = default_enabled
 			timer_for_guild[guild] = [default_min_timer, default_max_timer]
-	# declares a spot in the waiter dictionary for this server
-	waiter_for_guild[guild] = None
+	# declares a spot in the twaiter dictionary for this server
+	twaiter_for_guild[guild] = None
+	# declares a spot in the awaiter dictionary for this server
+	awaiter_for_guild[guild] = None
 	# creates a task for the bot to start running in for that server so multiple while loops can be running at once without the program freezing
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
@@ -190,11 +246,6 @@ async def start_in_server(guild):
 async def join_loop(guild):
 	# directory that the sound files are kept in
 	sound_directory = f"Sounds/server_{guild.id}"
-	# pulls the message that the bot sends right before it joins a channel from a file
-	join_message = ""
-	with open("JoinMessage.txt", "r") as file:
-		# makes sure the message is less than 2000 characters because of the discord limit
-		join_message = file.read(2000).strip()
 	while enabled_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
@@ -220,11 +271,12 @@ async def join_loop(guild):
 						await asyncio.sleep(0.1)
 				# join the channel
 				voice = await channel.connect()
-				# if there is a channel the bot can read + send in, the last message wasn't a join message, and there is a join message
+				# if there is a channel the bot can read + send in, the last message wasn't an alert message, and there is an alert message
 				last_message = text_channel.last_message
-				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == join_message) and len(join_message) > 0:
-					# send a join message
-					await text_channel.send(join_message)
+				alert = alert_for_guild[guild]
+				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == alert) and len(alert) > 0:
+					# send an alert message
+					await text_channel.send(alert)
 				# play the file
 				voice.play(FFmpegPCMAudio(f"{sound_directory}/{sound}"))
 				# wait until bot is not playing anymore audio
@@ -300,7 +352,7 @@ async def on_message(message):
 					on_info = f"{example_prefix} on {{time (optional)}}:"
 					on_info += f"\n> Enables the bot to randomly join channels (for a certain amount of time if given an argument)"
 					onq_info = f"{example_prefix} on?:"
-					onq_info += f"\n> Tells you if the bot is currently enabled or disabled in your server"
+					onq_info += f"\n> Tells you if the bot is currently enabled or disabled in this server"
 					add_info = f"{example_prefix} add {{file attatchment(s)}}:"
 					add_info += f"\n> Adds sounds to this server's sound list if you attach mp3 or wav files"
 					remove_info = f"{example_prefix} remove {{file name(s)}}:"
@@ -319,6 +371,18 @@ async def on_message(message):
 					reset_info += f"\n> Resets the bot's waiting time to join"
 					play_info = f"{example_prefix} play {{file name}}:"
 					play_info += f"\n> Makes the bot join your voice channel and play a sound from this server's sound list that you input"
+					alertoff_info = f"{example_prefix} alertoff {{time (optional)}}:"
+					alertoff_info += f"\n> Disables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
+					alerton_info = f"{example_prefix} alerton {{time (optional)}}:"
+					alerton_info += f"\n> Enables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
+					alertonq_info = f"{example_prefix} alerton?:"
+					alertonq_info += f"\n> Tells you if the bot's alert messages are currently enabled or disabled in this server"
+					alert_info = f"{example_prefix} alert {{new alert message}}:"
+					alert_info += f"\n> Changes the alert message that the bot sends when it joins a channel randomly in this server"
+					alertq_info = f"{example_prefix} alert?:"
+					alertq_info += f"\n> Tells you what the bot's current alert message is for this server that it uses when it joins a channel randomly"
+					alertqf_info = f"{example_prefix} alert?f:"
+					alertqf_info += f"\n> Gives you the un-formatted, raw characters of the bot's current alert message for this server"
 					
 					# returns a string that lists info about every command
 					def get_help_message():
@@ -337,6 +401,12 @@ async def on_message(message):
 						help_message += f"\n\n{timerq_info}"
 						help_message += f"\n\n{reset_info}"
 						help_message += f"\n\n{play_info}"
+						help_message += f"\n\n{alertoff_info}"
+						help_message += f"\n\n{alerton_info}"
+						help_message += f"\n\n{alertonq_info}"
+						help_message += f"\n\n{alert_info}"
+						help_message += f"\n\n{alertq_info}"
+						help_message += f"\n\n{alertqf_info}"
 						help_message += f"\n\nType \"{example_prefix} help {{command name}}\" for examples and more info about a command"
 						return help_message
 
@@ -357,30 +427,34 @@ async def on_message(message):
 							leave_info += f"\n> {example_prefix} leave"
 							await message.reply(leave_info)
 						elif command[2].lower() == "stfu":
-							stfu_info += "\n> If this command is given a time argument, it will be disabled for that much time, and then re-enable itself after the time has expired"
+							stfu_info += "\n> If this command is given a time argument, the bot will be disabled for that much time, and then re-enable itself after the time has expired"
 							stfu_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							stfu_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
-							stfu_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used"
+							stfu_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+							stfu_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used to re-enable it"
 							stfu_info += "\n> To re-enable the bot, either use the \"on\" command, or use this command again with an argument for how long until it re-enables"
 							stfu_info += "\n> Note: This command will reset the bot's waiting time to join a channel (like the reset command)"
 							stfu_info += "\n> Examples:"
 							stfu_info += f"\n> {example_prefix} stfu"
 							stfu_info += f"\n> {example_prefix} stfu 60"
-							stfu_info += f"\n> {example_prefix} stfu 0:30:0"
-							stfu_info += f"\n> {example_prefix} stfu 0:0:120"
+							stfu_info += f"\n> {example_prefix} stfu 1:30:0"
+							stfu_info += f"\n> {example_prefix} stfu 30:0"
+							stfu_info += f"\n> {example_prefix} stfu 0:90:0"
+							stfu_info += f"\n> {example_prefix} stfu 0:120"
 							await message.reply(stfu_info)
 						elif command[2].lower() == "on":
-							on_info += "\n> If this command is given a time argument, it will stay enabled for that much time, and then disable itself after the time has expired"
+							on_info += "\n> If this command is given a time argument, the bot will stay enabled for that much time, and then disable itself after the time has expired"
 							on_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							on_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
-							on_info += "\n> If this command is not given any arguments, the bot will stay enabled until another command is used"
+							on_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+							on_info += "\n> If this command is not given any arguments, the bot will stay enabled until another command is used to disable it"
 							on_info += "\n> To disable the bot, either use the \"stfu\" command, or use this command again with an argument for how long until it should disable"
 							on_info += "\n> Note: When the bot re-enables after being disabled, its waiting time to join a channel will have been reset (like the reset command)"
 							on_info += "\n> Examples:"
 							on_info += f"\n> {example_prefix} on"
 							on_info += f"\n> {example_prefix} on 60"
-							on_info += f"\n> {example_prefix} on 0:30:0"
-							on_info += f"\n> {example_prefix} on 0:0:120"
+							on_info += f"\n> {example_prefix} on 1:30:0"
+							on_info += f"\n> {example_prefix} on 30:0"
+							on_info += f"\n> {example_prefix} on 0:90:0"
+							on_info += f"\n> {example_prefix} on 0:120"
 							await message.reply(on_info)
 						elif command[2].lower() == "on?":
 							onq_info += "\n> Example:"
@@ -424,14 +498,16 @@ async def on_message(message):
 							await message.reply(give_info)
 						elif command[2].lower() == "timer":
 							timer_info += "\n> Arguments must either be a positive number of seconds, or be in colon format"
-							timer_info += "\n> Colon format: \"hrs:min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds)"
+							timer_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
 							timer_info += "\n> This command does not automatically reset the bot's current countdown to join"
 							timer_info += "\n> In other words, this command will not take effect until either the next time the bot joins, or the \"reset\" command is used"
 							timer_info += "\n> Examples:"
 							timer_info += f"\n> {example_prefix} timer 60 120"
 							timer_info += f"\n> {example_prefix} timer 0:30:0 1:0:0"
+							timer_info += f"\n> {example_prefix} timer 15:0 60:0"
 							timer_info += f"\n> {example_prefix} timer 0:0:30 3600"
-							timer_info += f"\n> {example_prefix} timer 0:0:0 0:90:0"
+							timer_info += f"\n> {example_prefix} timer 60:0 0:90:0"
+							timer_info += f"\n> {example_prefix} timer 0 60:0"
 							await message.reply(timer_info)
 						elif command[2].lower() == "timer?":
 							timerq_info += "\n> Example:"
@@ -449,6 +525,55 @@ async def on_message(message):
 							play_info += f"\n> {example_prefix} play example_file.mp3"
 							play_info += f"\n> {example_prefix} play example_file.wav"
 							await message.reply(play_info)
+						elif command[2].lower() == "alertoff":
+							alertoff_info += "\n> If this command is given a time argument, alert messages will be disabled for that much time, and then be re-enabled after the time has expired"
+							alertoff_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+							alertoff_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+							alertoff_info += "\n> If this command is not given any arguments, alert messages will stay disabled until another command is used to re-enable them"
+							alertoff_info += "\n> To re-enable alert messages, either use the \"alerton\" command, or use this command again with an argument for how long until they re-enable"
+							alertoff_info += "\n> Examples:"
+							alertoff_info += f"\n> {example_prefix} alertoff"
+							alertoff_info += f"\n> {example_prefix} alertoff 60"
+							alertoff_info += f"\n> {example_prefix} alertoff 1:30:0"
+							alertoff_info += f"\n> {example_prefix} alertoff 30:0"
+							alertoff_info += f"\n> {example_prefix} alertoff 0:90:0"
+							alertoff_info += f"\n> {example_prefix} alertoff 0:120"
+							await message.reply(alertoff_info)
+						elif command[2].lower() == "alerton":
+							alerton_info += "\n> If this command is given a time argument, alert messages will stay enabled for that much time, and then be disabled after the time has expired"
+							alerton_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+							alerton_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+							alerton_info += "\n> If this command is not given any arguments, alert messages will stay enabled until another command is used to disable them"
+							alerton_info += "\n> To disable alert messages, either use the \"alertoff\" command, or use this command again with an argument for how long until they disable"
+							alerton_info += "\n> Examples:"
+							alerton_info += f"\n> {example_prefix} alerton"
+							alerton_info += f"\n> {example_prefix} alerton 60"
+							alerton_info += f"\n> {example_prefix} alerton 1:30:0"
+							alerton_info += f"\n> {example_prefix} alerton 30:0"
+							alerton_info += f"\n> {example_prefix} alerton 0:90:0"
+							alerton_info += f"\n> {example_prefix} alerton 0:120"
+							await message.reply(alerton_info)
+						elif command[2].lower() == "alerton?":
+							alertonq_info += "\n> Example:"
+							alertonq_info += f"\n> {example_prefix} alerton?"
+							await message.reply(alertonq_info)
+						elif command[2].lower() == "alert":
+							alert_info += "\n> Note: This command will only take the first 2000 characters of the input due to the discord message size limit"
+							alert_info += "\n> Examples:"
+							alert_info += f"\n> {example_prefix} alert New Alert Message"
+							alert_info += f"\n> {example_prefix} alert __Alert Message Underlined With Discord Formatting__"
+							alert_info += f"\n> {example_prefix} alert **CHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOS**"
+							await message.reply(alert_info)
+						elif command[2].lower() == "alert?":
+							alertq_info += "\n> Example:"
+							alertq_info += f"\n> {example_prefix} alert?"
+							await message.reply(alertq_info)
+						elif command[2].lower() == "alert?f":
+							alertqf_info += "\n> Note: This command may send out triple backticks (\"\\`\\`\\`\") in alert messages like this (\"\\\\\\`\\\\\\`\\\\\\`\")"
+							alertqf_info += "\n> This is due to the fact that the discord developers forgot that you have to make fully functioning escapes for formatting symbols"
+							alertqf_info += "\n> Example:"
+							alertqf_info += f"\n> {example_prefix} alert?f"
+							await message.reply(alertqf_info)
 						# otherwise reply with info about every command
 						else:
 							await message.reply(get_help_message())
@@ -474,12 +599,12 @@ async def on_message(message):
 					# disable the bot in that server
 					enabled_in_guild[message.guild] = False
 					# changes the enabled setting in the server's settings file
-					file_enabled_setting(message.guild, False)
+					file_setting(message.guild, "enabled", False, 1)
 					# stop join loop for server
 					task_for_guild[message.guild].cancel()
 					# if the bot is currently waiting for an sftu or on command to finish, cancel it
-					if waiter_for_guild[message.guild]:
-						waiter_for_guild[message.guild].cancel()
+					if twaiter_for_guild[message.guild]:
+						twaiter_for_guild[message.guild].cancel()
 					# if the bot is connected to a channel in that server, then leave
 					voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 					if voice_client and voice_client.is_connected():
@@ -490,7 +615,7 @@ async def on_message(message):
 					# if the argument can be processed as a number of seconds
 					if not time is None:
 						# start a countdown until the enabled flag gets flipped for this server
-						waiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip(message.guild, time))
+						twaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("t", message.guild, time))
 						await react_with_check(message)
 					else:
 						await react_with_x(message)
@@ -503,19 +628,19 @@ async def on_message(message):
 					# enable the bot in that server
 					enabled_in_guild[message.guild] = True
 					# changes the enabled setting in the server's settings file
-					file_enabled_setting(message.guild, True)
+					file_setting(message.guild, "enabled", True, 1)
 					# recreate a task for that server
 					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
 					# if the bot is currently waiting for an sftu or on command to finish, cancel it
-					if waiter_for_guild[message.guild]:
-						waiter_for_guild[message.guild].cancel()
+					if twaiter_for_guild[message.guild]:
+						twaiter_for_guild[message.guild].cancel()
 				# if the command has any arguments
 				if len(command) > 2:
 					time = process_time(command[2])
 					# if the argument can be processed as a number of seconds
 					if not time is None:
 						# start a countdown until the enabled flat gets flipped for this server
-						waiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip(message.guild, time))
+						twaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("t", message.guild, time))
 						await react_with_check(message)
 					else:
 						await react_with_x(message)
@@ -666,7 +791,8 @@ async def on_message(message):
 							timer_for_guild[message.guild][0] = min
 							timer_for_guild[message.guild][1] = max
 							# change the min and max timer values for the server in the server's settings file
-							file_timer_settings(message.guild, min, max)
+							file_setting(message.guild, "min_timer", min, 2)
+							file_setting(message.guild, "max_timer", max, 3)
 							# reacts to message with a checkmark emoji when done
 							await react_with_check(message)
 						else:
@@ -737,37 +863,93 @@ async def on_message(message):
 						await react_with_x(message)
 				else:
 					await react_with_x(message)
+			# if alertoff command
+			elif command[1].lower() == "alertoff":
+				# if the bot's alert messages are currently enabled
+				if alerton_for_guild[message.guild]:
+					# disabled them
+					alerton_for_guild[message.guild] = False
+					file_setting(message.guild, "alert_on", False, 4)
+					# if the bot is currently waiting for an alerton or alertoff command to finish, cancel it
+					if awaiter_for_guild[message.guild]:
+						awaiter_for_guild[message.guild].cancel()
+				# if the command has an argument
+				if len(command) > 2:
+					time = process_time(command[2])
+					# if the argument can be processed as a number of seconds
+					if not time is None:
+						# start a countdown until the alerton flag is flipped for this server
+						awaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("a", message.guild, time))
+						await react_with_check(message)
+					else:
+						await react_with_x(message)
+				else:
+					await react_with_check(message)
+			# if alerton command
+			elif command[1].lower() == "alerton":
+				# if the bot's alert messages are currently enabled
+				if not alerton_for_guild[message.guild]:
+					# disabled them
+					alerton_for_guild[message.guild] = True
+					file_setting(message.guild, "alert_on", True, 4)
+					# if the bot is currently waiting for an alerton or alertoff command to finish, cancel it
+					if awaiter_for_guild[message.guild]:
+						awaiter_for_guild[message.guild].cancel()
+				# if the command has an argument
+				if len(command) > 2:
+					time = process_time(command[2])
+					# if the argument can be processed as a number of seconds
+					if not time is None:
+						# start a countdown until the alerton flag is flipped for this server
+						awaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("a", message.guild, time))
+						await react_with_check(message)
+					else:
+						await react_with_x(message)
+				else:
+					await react_with_check(message)
+			# if alerton? command
+			elif command[1].lower() == "alerton?":
+				# if alerts are enabled for this server, react with a check
+				if alerton_for_guild[message.guild]:
+					await react_with_check(message)
+				# if alerts are disabeld for this server, react with an x
+				else:
+					await react_with_x(message)
+			# if alert command
+			elif command[1].lower() == "alert":
+				# if the command has an argument
+				if len(command) > 2:
+					# turns the first 2000 characters after the alert command into the server's alert message
+					alert_for_guild[message.guild] = message.content[message.content.index("alert")+5:].strip()[:2000]
+					file_setting(message.guild, "alert", alert_for_guild[message.guild], 5)
+					await react_with_check(message)
+				# if the command has no arguments
+				else:
+					await react_with_x(message)
+			# if alert? command
+			elif command[1].lower() == "alert?":
+				# if the bot has permission to send messages in this channel
+				if perms.send_messages:
+					# reply with the server's alert message
+					await message.reply(alert_for_guild[message.guild])
+			# if alert?f command
+			elif command[1].lower() == "alert?f":
+				# if the bot has permission to send messages in this channel
+				if perms.send_messages:
+					# reply with the unformatted, raw characters of the server's alert message
+					deformatted_alert = alert_for_guild[message.guild].replace("```", "\\`\\`\\`")
+					await message.reply(f"```\n{deformatted_alert}\n```")
 
-# changes the enabled setting for a server in the server's settings file
-def file_enabled_setting(guild, value):
+# changes the value of a setting in a server's settings folder
+def file_setting(guild, name, value, index):
 	settings_file = f"Settings/server_{guild.id}/Settings.set"
 	settings = []
 	with open(settings_file, "r") as file:
 		settings = file.readlines()
-	if len(settings) > 1:
-		settings[1] = f"enabled: {value}\n"
+	if len(settings) > index:
+		settings[index] = f"{name}: {value}\n"
 	else:
-		settings += f"enabled: {value}\n"
-	settings_str = ""
-	for s in settings:
-		settings_str += s
-	with open(settings_file, "w") as file:
-		file.write(settings_str)
-
-# changes the timer settings for a server in the server's settings file
-def file_timer_settings(guild, min, max):
-	settings_file = f"Settings/server_{guild.id}/Settings.set"
-	settings = []
-	with open(settings_file, "r") as file:
-		settings = file.readlines()
-	if len(settings) > 2:
-		settings[2] = f"min_timer: {min}\n"
-	else:
-		settings += f"min_timer: {min}\n"
-	if len(settings) > 3:
-		settings[3] = f"max_timer: {max}\n"
-	else:
-		settings += f"max_timer: {max}\n"
+		settings.append(f"{name}: {value}\n")
 	settings_str = ""
 	for s in settings:
 		settings_str += s
@@ -830,10 +1012,14 @@ def process_time(arg):
 	return time
 
 # starts a timer until the enabled flat for a server gets flipped
-async def wait_to_flip(guild, time):
+async def wait_to_flip(dict, guild, time):
 	await asyncio.sleep(time)
-	enabled_in_guild[guild] = not enabled_in_guild[guild]
-	file_enabled_setting(guild, enabled_in_guild[guild])
+	if dict == "t":
+		enabled_in_guild[guild] = not enabled_in_guild[guild]
+		file_setting(guild, "enabled", enabled_in_guild[guild], 1)
+	elif dict == "a":
+		alerton_for_guild[guild] = not alerton_for_guild[guild]
+		file_setting(guild, "alert_on", alerton_for_guild[guild], 4)
 
 # sets up the bot every time it joins a new server while running
 @client.event
