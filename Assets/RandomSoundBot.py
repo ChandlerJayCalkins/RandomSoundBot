@@ -506,7 +506,7 @@ async def on_message(message):
 							add_info += "\n> In order for this command to work:"
 							add_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							add_info += "\n> The attached files must be in the same message as the command"
-							add_info += "\n> The attached files must have names that are less than 128 characters long"
+							add_info += "\n> The bot will skip over files that are over 10mb in size or have file names longer than 128 characters"
 							add_info += "\n> Examples:"
 							add_info += f"\n> {example_prefix} add {{attached file: example_file.mp3}}"
 							add_info += f"\n> {example_prefix} add {{attached file: example_file_1.wav}} {{attached file: example_file_2.mp3}}"
