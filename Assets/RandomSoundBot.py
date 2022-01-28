@@ -279,9 +279,6 @@ async def join_loop(guild):
 					await text_channel.send(alert)
 				# join the channel and play the sound
 				await play_sound(channel, sound_path)
-			# otherwise, print error message
-			else:
-				print(f"No sound file found in {guild.name} {{id={guild.id}}})")
 
 # returns a list of all voice channels with at least one person in them
 def get_populated_vcs(guild):
