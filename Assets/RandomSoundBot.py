@@ -29,7 +29,6 @@
 
 # TODO
 # 1. Make it so the bot can log events and activity
-# 2. Make it so users can change what channel the bot sends alert messages in
 # 2. Combine the stfu, on, alertoff, and alerton code into one function if reasonable
 
 import discord
