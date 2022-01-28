@@ -110,7 +110,7 @@ async def start_in_server(guild):
 	default_enabled = True
 	# default random time to join is 1 min - 2 hours
 	default_min_timer = 60.0
-	default_max_timer = 7201.0
+	default_max_timer = 7200.0
 	# bot's alert message is on by default
 	default_alerton = True
 	# default message that the bot sends when it joins a channel randomly
@@ -297,7 +297,7 @@ async def join_loop(guild):
 	sound_directory = f"Sounds/server_{guild.id}"
 	while enabled_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
-		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]))
+		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]+1))
 		# gets a list of all voice channels with people in them currently
 		populated_channels = get_populated_vcs(guild)
 		# if there are any channels with people in them, then pick and random audio file, join a random channel with people, and play the file
@@ -860,7 +860,6 @@ async def on_message(message):
 					if type(min) is float and type(max) is float:
 						# makes sure the min is not larger than the max
 						if min <= max:
-							max += 1 # adds 1 since the randrange function uses a delimiter rather than an upper bound
 							# set the min and max timer values for the server
 							timer_for_guild[message.guild][0] = min
 							timer_for_guild[message.guild][1] = max
@@ -883,11 +882,9 @@ async def on_message(message):
 					min_hrs = int(timer_for_guild[message.guild][0] // 3600)
 					min_min = int(timer_for_guild[message.guild][0] // 60 % 60)
 					min_sec = timer_for_guild[message.guild][0] % 60
-					# temp variable for max frequency since it needs to have 1 second subtracted from it
-					max_tmp = timer_for_guild[message.guild][1] - 1
-					max_hrs = int(max_tmp // 3600)
-					max_min = int(max_tmp // 60 % 60)
-					max_sec = (max_tmp) % 60
+					max_hrs = int(timer_for_guild[message.guild][1] // 3600)
+					max_min = int(timer_for_guild[message.guild][1] // 60 % 60)
+					max_sec = (timer_for_guild[message.guild][1]) % 60
 					# reply with bot join frequency
 					await message.reply(f"Bot will join every `{min_hrs} hours {min_min} mins {min_sec} secs` to `{max_hrs} hours {max_min} mins {max_sec} secs`")
 				else:
@@ -1118,7 +1115,7 @@ def process_time(arg):
 
 # starts a timer until the enabled flat for a server gets flipped
 async def wait_to_flip(dict, guild, time):
-	await asyncio.sleep(time)
+	await asyncio.sleep(time+1)
 	if dict == "t":
 		enabled_in_guild[guild] = not enabled_in_guild[guild]
 		file_setting(guild, "enabled", enabled_in_guild[guild], 1)
