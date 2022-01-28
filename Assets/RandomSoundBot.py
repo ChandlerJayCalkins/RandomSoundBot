@@ -29,6 +29,7 @@
 
 # TODO
 # 1. Make it so the bot can log events and activity
+# 2. Make it so users can change what channel the bot sends alert messages in
 # 2. Combine the stfu, on, alertoff, and alerton code into one function if reasonable
 
 from cgitb import enable
@@ -258,36 +259,26 @@ async def join_loop(guild):
 			channel = random.choice(populated_channels)
 			# pick a random sound to play
 			sound = random.choice(get_sounds(sound_directory))
-			sound_file = f"{sound_directory}/{sound}"
+			sound_path = f"{sound_directory}/{sound}"
 			# prints the sound it's about to play
 			print(f"Now playing in {guild.name}: {sound}")
 			# get top channel bot is allowed to read and send messages in for the server
 			text_channel = get_alert_channel(guild)
 			# if the sound file exists
-			if os.path.isfile(sound_file):
+			if os.path.isfile(sound_path):
 				voice_client = discord.utils.get(client.voice_clients, guild=guild)
 				# if the bot is already connected to a voice channel in this server, then wait until it leaves
 				if voice_client:
 					while voice_client.is_connected():
 						await asyncio.sleep(0.1)
-				# join the channel
-				voice = await channel.connect()
 				# if there is a channel the bot can read + send in, the last message wasn't an alert message, and there is an alert message
 				last_message = text_channel.last_message
 				alert = alert_for_guild[guild]
 				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == alert) and len(alert) > 0:
 					# send an alert message
 					await text_channel.send(alert)
-				# play the file
-				voice.play(FFmpegPCMAudio(f"{sound_directory}/{sound}"))
-				# wait until bot is not playing anymore audio
-				while voice.is_playing():
-					await asyncio.sleep(0.1)
-				# wait about 1 second since there's a bit of lag with ffmpeg
-				await asyncio.sleep(1)
-				# then disconnect the bot
-				if guild.voice_client:
-					await guild.voice_client.disconnect()
+				# join the channel and play the sound
+				await play_sound(channel, sound_path)
 			# otherwise, print error message
 			else:
 				print(f"No sound file found in {guild.name} {{id={guild.id}}})")
@@ -325,6 +316,22 @@ def get_alert_channel(guild):
 			return c
 	# if there are no available channels, return nothing
 	return None
+
+# plays a sound in a voice channel
+async def play_sound(channel, sound_path):
+	# connects to the voice channel
+	voice = await channel.connect()
+	# starts playing the audio
+	voice.play(FFmpegPCMAudio(sound_path))
+	# waits until the audio is done playing or until the bot is not in the channel anymore
+	while voice.is_playing() and channel.guild.voice_client.channel == channel:
+		await asyncio.sleep(0.1)
+	# waits for a bit since there's a bit of lag to register that the bot is still playing audio
+	await asyncio.sleep(0.5)
+	# if the bot is still in a voice channel
+	if channel.guild.voice_client:
+		# disconnect
+		await channel.guild.voice_client.disconnect()
 
 # handles commands
 @client.event
@@ -662,8 +669,10 @@ async def on_message(message):
 					errors = []
 					# check each file in the message
 					for file in message.attachments:
-						# if the file is an mp3 or wav file, the file doesn't contain a "/" or "\" in the name (for security redundancy), and the file name is less than 128 characters long
-						if (file.filename.endswith(".mp3") or file.filename.endswith(".wav")) and not "/" in file.filename and not "\\" in file.filename and len(file.filename) < 128:
+						is_sound_file = file.filename.endswith(".mp3") or file.filename.endswith(".wav")
+						# if the file is an mp3 or wav file, the file doesn't contain a "/" or "\" in the name (for security redundancy), 
+						# the file name is less than 128 characters long, and the file size is less than 10mb (discord limitation)
+						if is_sound_file and not "/" in file.filename and not "\\" in file.filename and len(file.filename) < 128 and file.size < 10_000_000:
 							# save the file to the directory of the server the message was from
 							await file.save(f"{sound_dir}/{file.filename}")
 						# if the file couldn't be saved, add it to the error list
@@ -712,9 +721,10 @@ async def on_message(message):
 					old_dir = f"{sound_dir}/{command[2]}"
 					no_slashes = not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3]
 					correct_file_extensions = (command[2].endswith(".mp3") and command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))
+					not_a_dupe = get_sounds(sound_dir).count(command[3]) < 1
 					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, 
-					# and the new file name is less than 128 characters long
-					if os.path.isfile(old_dir) and no_slashes and correct_file_extensions and len(command[3] < 128):
+					# the new file name is not already being used, and the new file name is less than 128 characters long
+					if os.path.isfile(old_dir) and no_slashes and correct_file_extensions and not_a_dupe and len(command[3]) < 128:
 						# rename the file and react with a check
 						new_dir = f"{sound_dir}/{command[3]}"
 						os.rename(old_dir, new_dir)
@@ -728,7 +738,7 @@ async def on_message(message):
 				# if the bot has permission to send messages in this channel
 				if perms.send_messages:
 					# get a list of all sound files in the server's sound folder
-					sounds = get_sounds(f"{sound_dir}")
+					sounds = get_sounds(sound_dir)
 					# sort the sounds in alphabetical order
 					sounds.sort()
 					sound_message = f"```List of sounds for {message.guild.name[:128]}:"
@@ -846,18 +856,11 @@ async def on_message(message):
 							v_perms = channel.permissions_for(channel.guild.me)
 					# if the bot has a channel to join that they are allowed to join and speak in
 					if channel and v_perms and v_perms.connect and v_perms.speak:
-						sound_directory = f"{sound_dir}/{command[2]}"
+						sound_path = f"{sound_dir}/{command[2]}"
 						# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
-						if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_directory):
-							# connect and play the audio
-							voice = await channel.connect()
-							voice.play(FFmpegPCMAudio(sound_directory))
-							while voice.is_playing():
-								await asyncio.sleep(0.1)
-							await asyncio.sleep(1)
-							# disconnect when done playing
-							if message.guild.voice_client:
-								await message.guild.voice_client.disconnect()
+						if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_path):
+							# join the voice channel and play the sound
+							await play_sound(channel, sound_path)
 						else:
 							await react_with_x(message)
 					else:
