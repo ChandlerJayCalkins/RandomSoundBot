@@ -548,7 +548,7 @@ async def on_message(message):
 							timer_info += "\n> Changes the frequency of when the bot joins channels"
 							timer_info += "\n> Arguments must either be a positive number of seconds, or be in colon format"
 							timer_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
-							timer_info += "\n> This command does not automatically reset the bot's current countdown to join"
+							timer_info += "\n> Note: This command does not automatically reset the bot's current countdown to join"
 							timer_info += "\n> In other words, this command will not take effect until either the next time the bot joins, or the \"reset\" command is used"
 							timer_info += "\n> Examples:"
 							timer_info += f"\n> {example_prefix} timer 60 120"
