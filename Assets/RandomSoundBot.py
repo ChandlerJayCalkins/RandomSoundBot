@@ -66,6 +66,9 @@ alerton_for_guild = {}
 # keeps track of the message the bot sends when it randomly joins a channel for each server
 alert_for_guild = {}
 
+# keeps track of the channel that the bot sends its alert messages in
+channel_for_guild = {}
+
 # keeps track of currently running task for each server
 task_for_guild = {}
 
@@ -118,7 +121,7 @@ async def start_in_server(guild):
 	if os.path.isfile(settings_file):
 		settings = []
 		# expected size of settings
-		num_of_settings = 6
+		num_of_settings = 7
 		# flat to tell the bot to rewrite to the settings file if an error was found in it
 		error_detected = False
 		with open(settings_file, "r") as file:
@@ -214,6 +217,48 @@ async def start_in_server(guild):
 			else:
 				settings.append(f"alert: {default_alert}\n")
 			error_detected = True
+		# if the alert channel setting is in the file
+		if len(settings) > 6 and settings[6].startswith("alert_channel:"):
+			# read the alert channel setting
+			try:
+				alert_channel = settings[6][14:].strip()
+				# if the setting says "None"
+				if alert_channel == "None":
+					channel_for_guild[guild] = None
+				# otherwise, assume the setting is a valid channel id
+				else:
+					channel_for_guild[guild] = client.get_channel(int(alert_channel))
+			# remake the alert channel setting
+			except:
+				default_channel = get_alert_channel(guild)
+				channel_for_guild[guild] = default_channel
+				# if there is a channel that the bot can message in
+				if not default_channel is None:
+					# prepare to output its id
+					default_channel = default_channel.id
+				# if there aren't any
+				else:
+					# prepare to output "None"
+					default_channel = "None"
+				settings[6] = f"alert_channel: {default_channel}\n"
+				error_detected = True
+		# remake the alert channel setting
+		else:
+			default_channel = get_alert_channel(guild)
+			channel_for_guild[guild] = default_channel
+			# if there is a channel that the bot can message in
+			if not default_channel is None:
+				# prepare to output its id
+				default_channel = default_channel.id
+			# if there aren't any
+			else:
+				# prepare to output "None"
+				default_channel = "None"
+			if len(settings) > 6:
+				settings[6] = f"alert_channel: {default_channel}\n"
+			else:
+				settings.append(f"alert_channel: {default_channel}\n")
+			error_detected = True
 		# if any settings had to be remade or there are extra lines in the settings file
 		if error_detected or len(settings) > num_of_settings:
 			# write the corrections to the settings file
@@ -222,7 +267,8 @@ async def start_in_server(guild):
 				settings = settings[:num_of_settings+1]
 				settings_str = ""
 				for s in settings:
-					settings_str += s
+					s = s.strip()
+					settings_str += f"{s}\n"
 				file.write(settings_str)
 	# if no settings file exists
 	else:
@@ -232,7 +278,9 @@ async def start_in_server(guild):
 			file.write(f"enabled: {default_enabled}\n")
 			file.write(f"min_timer: {default_min_timer}\n")
 			file.write(f"max_timer: {default_max_timer}\n")
+			file.write(f"alert_on: {default_alerton}\n")
 			file.write(f"alert: {default_alert}\n")
+			file.write(f"alert_channel: {get_alert_channel(guild).id}\n")
 			enabled_in_guild[guild] = default_enabled
 			timer_for_guild[guild] = [default_min_timer, default_max_timer]
 	# declares a spot in the twaiter dictionary for this server
@@ -259,10 +307,6 @@ async def join_loop(guild):
 			# pick a random sound to play
 			sound = random.choice(get_sounds(sound_directory))
 			sound_path = f"{sound_directory}/{sound}"
-			# prints the sound it's about to play
-			print(f"Now playing in {guild.name}: {sound}")
-			# get top channel bot is allowed to read and send messages in for the server
-			text_channel = get_alert_channel(guild)
 			# if the sound file exists
 			if os.path.isfile(sound_path):
 				voice_client = discord.utils.get(client.voice_clients, guild=guild)
@@ -270,12 +314,17 @@ async def join_loop(guild):
 				if voice_client:
 					while voice_client.is_connected():
 						await asyncio.sleep(0.1)
-				# if there is a channel the bot can read + send in, the last message wasn't an alert message, and there is an alert message
-				last_message = text_channel.last_message
-				alert = alert_for_guild[guild]
-				if text_channel and not (last_message and last_message.author.id == client.user.id and last_message.content == alert) and len(alert) > 0:
-					# send an alert message
-					await text_channel.send(alert)
+				# get the alert channel for the server
+				text_channel = channel_for_guild[guild]
+				# if there is a text channel for the bot to send alerts in
+				if text_channel:
+					last_message = text_channel.last_message
+					alert = alert_for_guild[guild]
+					# if the last message wasn't an alert message and there is an alert message
+					if not (last_message and last_message.author.id == client.user.id and last_message.content == alert) and len(alert) > 0:
+						# send an alert message
+						await text_channel.send(alert)
+				print(f"Now playing in {guild.name}: {sound}")
 				# join the channel and play the sound
 				await play_sound(channel, sound_path)
 
@@ -367,6 +416,8 @@ async def on_message(message):
 					alert_info = f"{example_prefix} alert {{new alert message}}:"
 					alertq_info = f"{example_prefix} alert?:"
 					alertqf_info = f"{example_prefix} alert?f:"
+					channel_info = f"{example_prefix} channel {{new alert channel}}:"
+					channelq_info = f"{example_prefix} channel?:"
 					
 					# returns a string that lists info about every command
 					def get_help_message():
@@ -391,6 +442,8 @@ async def on_message(message):
 						help_message += f"\n\n{alert_info}"
 						help_message += f"\n\n{alertq_info}"
 						help_message += f"\n\n{alertqf_info}"
+						help_message += f"\n\n{channel_info}"
+						help_message += f"\n\n{channelq_info}"
 						help_message += f"\n\nType \"{example_prefix} help {{command name}}\" for examples and more info about a command (Ex: \"{example_prefix} help timer\")"
 						return help_message
 
@@ -579,6 +632,18 @@ async def on_message(message):
 							alertqf_info += "\n> Example:"
 							alertqf_info += f"\n> {example_prefix} alert?f"
 							await message.reply(alertqf_info)
+						elif command[2].lower() == "channel":
+							channel_info += "\n> Changes the channel that the bot sends alert messages in"
+							channel_info += "\n> This command will not work if it is not linked a channel that the bot has permission to both read and send messages in"
+							channel_info += "\n> Examples:"
+							channel_info += f"\n> {example_prefix} channel ``#general``"
+							channel_info += f"\n> {example_prefix} channel ``#new-alert-channel``"
+							await message.reply(channel_info)
+						elif command[2].lower() == "channel?":
+							channelq_info += "\n> Tells you what channel the bot is currently using to send alert messages in"
+							channelq_info += "\n> Example:"
+							channelq_info += f"\n> {example_prefix} channel?"
+							await message.reply(channelq_info)
 						# otherwise reply with info about every command
 						else:
 							await message.reply(get_help_message())
@@ -614,6 +679,7 @@ async def on_message(message):
 					voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 					if voice_client and voice_client.is_connected():
 						voice_client.stop()
+						await voice_client.disconnect()
 				# if the command has any arguments
 				if len(command) > 2:
 					time = process_time(command[2])
@@ -940,6 +1006,44 @@ async def on_message(message):
 					# reply with the unformatted, raw characters of the server's alert message
 					deformatted_alert = alert_for_guild[message.guild].replace("```", "\\`\\`\\`")
 					await message.reply(f"```\n{deformatted_alert}\n```")
+			# if channel command
+			elif command[1].lower() == "channel":
+				# if there is an argument and it's in channel format
+				if len(command) > 2 and command[2].startswith("<#") and command[2].endswith(">"):
+					# attempt to cast it to a channel
+					try:
+						alert_channel = client.get_channel(int(command[2][2:command[2].index(">")]))
+						# if the channel was found
+						if not alert_channel is None:
+							alert_perms = alert_channel.permissions_for(message.guild.me)
+							# if the bot has permission to read and message in that channel
+							if alert_perms.read_messages and alert_perms.send_messages:
+								# change the alert channel, save the setting for it, and react with a check
+								channel_for_guild[message.guild] = alert_channel
+								file_setting(message.guild, "alert_channel", channel_for_guild[message.guild].id, 6)
+								await react_with_check(message)
+							else:
+								await react_with_x(message)
+						else:
+							await react_with_x(message)
+					except:
+						await react_with_x(message)
+				else:
+					await react_with_x(message)
+			# if channel? command
+			elif command[1].lower() == "channel?":
+				# if the bot has permission to send messages in this channel
+				if perms.send_messages:
+					# if the bot doesn't have an alert channel
+					if channel_for_guild[message.guild] is None:
+						# reply letting the user know that the bot doesn't have an alert channel
+						await message.reply("This server doesn't have an alert channel currently")
+					# if the bot does have an alert channel
+					else:
+						# reply with the bot's alert channel
+						await message.reply(f"<#{channel_for_guild[message.guild].id}>")
+				else:
+					await react_with_x(message)
 
 # changes the value of a setting in a server's settings folder
 def file_setting(guild, name, value, index):
