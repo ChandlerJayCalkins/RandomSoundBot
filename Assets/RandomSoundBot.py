@@ -32,7 +32,6 @@
 # 2. Make it so users can change what channel the bot sends alert messages in
 # 2. Combine the stfu, on, alertoff, and alerton code into one function if reasonable
 
-from cgitb import enable
 import discord
 from discord import FFmpegPCMAudio
 import asyncio
