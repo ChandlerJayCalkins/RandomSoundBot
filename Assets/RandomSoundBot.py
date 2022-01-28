@@ -456,9 +456,9 @@ async def on_message(message):
 						elif command[2].lower() == "add":
 							add_info += "\n> Adds sounds to this server's sound list if you attach mp3 or wav files"
 							add_info += "\n> In order for this command to work:"
+							add_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							add_info += "\n> The attached files must be in the same message as the command"
 							add_info += "\n> The attached files must have names that are less than 128 characters long"
-							add_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							add_info += "\n> Examples:"
 							add_info += f"\n> {example_prefix} add {{attached file: example_file.mp3}}"
 							add_info += f"\n> {example_prefix} add {{attached file: example_file_1.wav}} {{attached file: example_file_2.mp3}}"
@@ -473,10 +473,11 @@ async def on_message(message):
 						elif command[2].lower() == "rename":
 							rename_info += "\n> Renames a file in this server's sound list"
 							rename_info += "\n> In order for this command to work:"
+							rename_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							rename_info += "\n> The file extension of the new name must match the file extension of the old name"
+							rename_info += "\n> The new file name cannot be the same as any existing files"
 							rename_info += "\n> The new file name must not contain any slashes or backslashes"
 							rename_info += "\n> The new file name must be less than 128 characters long"
-							rename_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
 							rename_info += "\n> Examples:"
 							rename_info += f"\n> {example_prefix} rename old_file_name.mp3 new_file_name.mp3"
 							rename_info += f"\n> {example_prefix} rename old_file_name.wav new_file_name.wav"
