@@ -583,6 +583,7 @@ async def on_message(message):
 							alertoff_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
 							alertoff_info += "\n> If this command is not given any arguments, alert messages will stay disabled until another command is used to re-enable them"
 							alertoff_info += "\n> To re-enable alert messages, either use the \"alerton\" command, or use this command again with an argument for how long until they re-enable"
+							alertoff_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							alertoff_info += "\n> Examples:"
 							alertoff_info += f"\n> {example_prefix} alertoff"
 							alertoff_info += f"\n> {example_prefix} alertoff 60"
@@ -598,6 +599,7 @@ async def on_message(message):
 							alerton_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
 							alerton_info += "\n> If this command is not given any arguments, alert messages will stay enabled until another command is used to disable them"
 							alerton_info += "\n> To disable alert messages, either use the \"alertoff\" command, or use this command again with an argument for how long until they disable"
+							alerton_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							alerton_info += "\n> Examples:"
 							alerton_info += f"\n> {example_prefix} alerton"
 							alerton_info += f"\n> {example_prefix} alerton 60"
@@ -608,12 +610,14 @@ async def on_message(message):
 							await message.reply(alerton_info)
 						elif command[2].lower() == "alerton?":
 							alertonq_info += "\n> Tells you if the bot's alert messages are currently enabled or disabled in this server"
+							alertonq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							alertonq_info += "\n> Example:"
 							alertonq_info += f"\n> {example_prefix} alerton?"
 							await message.reply(alertonq_info)
 						elif command[2].lower() == "alert":
 							alert_info += "\n> Changes the alert message that the bot sends when it joins a channel randomly in this server"
-							alert_info += "\n> Note: This command will only take the first 2000 characters of the input due to the discord message size limit"
+							alert_info += "\n> This command will only take the first 2000 characters of the input due to the discord message size limit"
+							alert_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							alert_info += "\n> Examples:"
 							alert_info += f"\n> {example_prefix} alert New Alert Message"
 							alert_info += f"\n> {example_prefix} alert __Alert Message Underlined With Discord Formatting__"
@@ -621,6 +625,7 @@ async def on_message(message):
 							await message.reply(alert_info)
 						elif command[2].lower() == "alert?":
 							alertq_info += "\n> Tells you what the bot's current alert message is for this server that it uses when it joins a channel randomly"
+							alertq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							alertq_info += "\n> Example:"
 							alertq_info += f"\n> {example_prefix} alert?"
 							await message.reply(alertq_info)
@@ -628,18 +633,21 @@ async def on_message(message):
 							alertqf_info += "\n> Gives you the un-formatted, raw characters of the bot's current alert message for this server"
 							alertqf_info += "\n> Note: This command may send out triple backticks (\"\\`\\`\\`\") in alert messages like this (\"\\\\\\`\\\\\\`\\\\\\`\")"
 							alertqf_info += "\n> This is due to the fact that the discord developers forgot to make functioning escapes for the code block symbols"
+							alertqf_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							alertqf_info += "\n> Example:"
 							alertqf_info += f"\n> {example_prefix} alert?f"
 							await message.reply(alertqf_info)
 						elif command[2].lower() == "channel":
 							channel_info += "\n> Changes the channel that the bot sends alert messages in"
 							channel_info += "\n> This command will not work if it is not linked a channel that the bot has permission to both read and send messages in"
+							channel_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							channel_info += "\n> Examples:"
 							channel_info += f"\n> {example_prefix} channel ``#general``"
 							channel_info += f"\n> {example_prefix} channel ``#new-alert-channel``"
 							await message.reply(channel_info)
 						elif command[2].lower() == "channel?":
 							channelq_info += "\n> Tells you what channel the bot is currently using to send alert messages in"
+							channelq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
 							channelq_info += "\n> Example:"
 							channelq_info += f"\n> {example_prefix} channel?"
 							await message.reply(channelq_info)
