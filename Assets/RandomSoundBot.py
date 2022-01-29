@@ -28,8 +28,9 @@
 # Video
 
 # TODO
-# 1. Make it so the bot can log events and activity
-# 2. Make it so the bot automatically disaplys the last time it restarted in the about me section every time it starts up
+# 1. Make it so the bot automatically disaplys the last time it restarted in the about me section every time it starts up (whenever that becomes a thing)
+# 2. Make it so the bot can log events and activity
+# 3. Make it so users can also input youtube urls into the bot with the add command
 
 import discord
 from discord import FFmpegPCMAudio
