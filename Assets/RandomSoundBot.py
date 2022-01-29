@@ -29,7 +29,7 @@
 
 # TODO
 # 1. Make it so the bot can log events and activity
-# 2. Combine the stfu, on, alertoff, and alerton code into one function if reasonable
+# 2. Make it so the bot automatically disaplys the last time it restarted in the about me section every time it starts up
 
 import discord
 from discord import FFmpegPCMAudio
@@ -60,7 +60,7 @@ enabled_in_guild = {}
 timer_for_guild = {}
 
 # keeps track of whether or not the alert is enabled in each server
-alerton_for_guild = {}
+alerton_in_guild = {}
 
 # keeps track of the message the bot sends when it randomly joins a channel for each server
 alert_for_guild = {}
@@ -72,10 +72,10 @@ channel_for_guild = {}
 task_for_guild = {}
 
 # keeps track of timed stfu and on commands
-twaiter_for_guild = {}
+enabled_waiter_for_guild = {}
 
 # keeps track of timed alerton and alertoff commands
-awaiter_for_guild = {}
+alert_waiter_for_guild = {}
 
 # called as soon as the bot is fully online and operational
 @client.event
@@ -184,15 +184,15 @@ async def start_in_server(guild):
 		if len(settings) > 4 and settings[4].startswith("alert_on:"):
 			# read the alert on setting
 			try:
-				alerton_for_guild[guild] = settings[4][9:].strip().lower == "true"
+				alerton_in_guild[guild] = settings[4][9:].strip().lower() == "true"
 			# remake the alert on setting
 			except:
-				alerton_for_guild[guild] = default_alerton
+				alerton_in_guild[guild] = default_alerton
 				settings[4] = f"alert_on: {default_alerton}\n"
 				error_detected = True
 		# remake the alert on setting
 		else:
-			alerton_for_guild[guild] = default_alerton
+			alerton_in_guild[guild] = default_alerton
 			if len(settings) > 4:
 				settings[4] = f"alert_on: {default_alerton}\n"
 			else:
@@ -283,9 +283,9 @@ async def start_in_server(guild):
 			enabled_in_guild[guild] = default_enabled
 			timer_for_guild[guild] = [default_min_timer, default_max_timer]
 	# declares a spot in the twaiter dictionary for this server
-	twaiter_for_guild[guild] = None
+	enabled_waiter_for_guild[guild] = None
 	# declares a spot in the awaiter dictionary for this server
-	awaiter_for_guild[guild] = None
+	alert_waiter_for_guild[guild] = None
 	# creates a task for the bot to start running in for that server so multiple while loops can be running at once without the program freezing
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
 
@@ -319,8 +319,9 @@ async def join_loop(guild):
 				if text_channel:
 					last_message = text_channel.last_message
 					alert = alert_for_guild[guild]
-					# if the last message wasn't an alert message and there is an alert message
-					if not (last_message and last_message.author.id == client.user.id and last_message.content == alert) and len(alert) > 0:
+					last_message_was_alert = last_message and last_message.author.id == client.user.id and last_message.content == alert
+					# if the last message wasn't an alert message, alert messages are enabled in this server, and this server has an alert message
+					if not last_message_was_alert and alerton_in_guild[guild] and len(alert) > 0:
 						# send an alert message
 						await text_channel.send(alert)
 				print(f"Now playing in {guild.name}: {sound}")
@@ -372,10 +373,19 @@ async def play_sound(channel, sound_path):
 		await asyncio.sleep(0.1)
 	# waits for a bit since there's a bit of lag to register that the bot is still playing audio
 	await asyncio.sleep(0.5)
-	# if the bot is still in a voice channel
-	if channel.guild.voice_client:
-		# disconnect
-		await channel.guild.voice_client.disconnect()
+	await leave_channel(channel.guild)
+
+# attempts to disconnect the bot from a voice channel in a server
+async def leave_channel(guild):
+	voice_client = discord.utils.get(client.voice_clients, guild = guild)
+	# if there is a voice client object
+	if voice_client:
+		# if the bot is playing, stop
+		if voice_client.is_playing():
+			voice_client.stop()
+		# if the bot is connected to a channel, disconnect
+		if voice_client.is_connected():
+			await voice_client.disconnect()
 
 # handles commands
 @client.event
@@ -663,67 +673,39 @@ async def on_message(message):
 			# if leave command
 			elif command[1].lower() == "leave":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-				# if the bot is connected to a channel in that server, then leave
 				if voice_client and voice_client.is_connected():
-					voice_client.stop()
-					await voice_client.disconnect()
+					await leave_channel(message.guild)
+					await react_with_check(message)
 				else:
 					await react_with_x(message)
 			# if stfu (shut the fuck up) command
 			elif command[1].lower() == "stfu":
-				# if the bot is currently enabled
-				if enabled_in_guild[message.guild]:
-					# disable the bot in that server
-					enabled_in_guild[message.guild] = False
-					# changes the enabled setting in the server's settings file
-					file_setting(message.guild, "enabled", False, 1)
-					# stop join loop for server
+				task = task_for_guild[message.guild]
+				# if there is join loop task running right now
+				if not task is None and not task.cancelled() and not task.done():
+					# cancel it
 					task_for_guild[message.guild].cancel()
-					# if the bot is currently waiting for an sftu or on command to finish, cancel it
-					if twaiter_for_guild[message.guild]:
-						twaiter_for_guild[message.guild].cancel()
-					# if the bot is connected to a channel in that server, then leave
-					voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-					if voice_client and voice_client.is_connected():
-						voice_client.stop()
-						await voice_client.disconnect()
-				# if the command has any arguments
+				# leave the voice channel
+				await leave_channel(message.guild)
+				arg = None
+				# if there is an argument, get it
 				if len(command) > 2:
-					time = process_time(command[2])
-					# if the argument can be processed as a number of seconds
-					if not time is None:
-						# start a countdown until the enabled flag gets flipped for this server
-						twaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("t", message.guild, time))
-						await react_with_check(message)
-					else:
-						await react_with_x(message)
-				else:
-					await react_with_check(message)
+					arg = command[2]
+				# flip the enabled setting
+				await flip_setting("enabled", message.guild, False, arg, message)
 			# if on command
 			elif command[1].lower() == "on":
-				# if the bot is not currently enabled
-				if not enabled_in_guild[message.guild]:
-					# enable the bot in that server
-					enabled_in_guild[message.guild] = True
-					# changes the enabled setting in the server's settings file
-					file_setting(message.guild, "enabled", True, 1)
-					# recreate a task for that server
+				task = task_for_guild[message.guild]
+				# if there aren't any join loop tasks running currently
+				if task is None or task.cancelled() or task.done():
+					# create one for the server
 					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
-					# if the bot is currently waiting for an sftu or on command to finish, cancel it
-					if twaiter_for_guild[message.guild]:
-						twaiter_for_guild[message.guild].cancel()
-				# if the command has any arguments
+				arg = None
+				# if there is an argument, get it
 				if len(command) > 2:
-					time = process_time(command[2])
-					# if the argument can be processed as a number of seconds
-					if not time is None:
-						# start a countdown until the enabled flat gets flipped for this server
-						twaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("t", message.guild, time))
-						await react_with_check(message)
-					else:
-						await react_with_x(message)
-				else:
-					await react_with_check(message)
+					arg = command[2]
+				# flip the enabled setting
+				await flip_setting("enabled", message.guild, True, arg, message)
 			# if on? command
 			elif command[1].lower() == "on?":
 				# if the bot is enabled, react with checkmark
@@ -936,54 +918,26 @@ async def on_message(message):
 					await react_with_x(message)
 			# if alertoff command
 			elif command[1].lower() == "alertoff":
-				# if the bot's alert messages are currently enabled
-				if alerton_for_guild[message.guild]:
-					# disabled them
-					alerton_for_guild[message.guild] = False
-					file_setting(message.guild, "alert_on", False, 4)
-					# if the bot is currently waiting for an alerton or alertoff command to finish, cancel it
-					if awaiter_for_guild[message.guild]:
-						awaiter_for_guild[message.guild].cancel()
-				# if the command has an argument
+				arg = None
+				# if there is an argument, get it
 				if len(command) > 2:
-					time = process_time(command[2])
-					# if the argument can be processed as a number of seconds
-					if not time is None:
-						# start a countdown until the alerton flag is flipped for this server
-						awaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("a", message.guild, time))
-						await react_with_check(message)
-					else:
-						await react_with_x(message)
-				else:
-					await react_with_check(message)
+					arg = command[2]
+				# flip the alert_on setting
+				await flip_setting("alert_on", message.guild, False, arg, message)
 			# if alerton command
 			elif command[1].lower() == "alerton":
-				# if the bot's alert messages are currently enabled
-				if not alerton_for_guild[message.guild]:
-					# disabled them
-					alerton_for_guild[message.guild] = True
-					file_setting(message.guild, "alert_on", True, 4)
-					# if the bot is currently waiting for an alerton or alertoff command to finish, cancel it
-					if awaiter_for_guild[message.guild]:
-						awaiter_for_guild[message.guild].cancel()
-				# if the command has an argument
+				arg = None
+				# if there is an argument, get it
 				if len(command) > 2:
-					time = process_time(command[2])
-					# if the argument can be processed as a number of seconds
-					if not time is None:
-						# start a countdown until the alerton flag is flipped for this server
-						awaiter_for_guild[message.guild] = client.loop.create_task(wait_to_flip("a", message.guild, time))
-						await react_with_check(message)
-					else:
-						await react_with_x(message)
-				else:
-					await react_with_check(message)
+					arg = command[2]
+				# flip the alert_on setting
+				await flip_setting("alert_on", message.guild, True, arg, message)
 			# if alerton? command
 			elif command[1].lower() == "alerton?":
 				# if alerts are enabled for this server, react with a check
-				if alerton_for_guild[message.guild]:
+				if alerton_in_guild[message.guild]:
 					await react_with_check(message)
-				# if alerts are disabeld for this server, react with an x
+				# if alerts are disabled for this server, react with an x
 				else:
 					await react_with_x(message)
 			# if alert command
@@ -1049,16 +1003,58 @@ async def on_message(message):
 				else:
 					await react_with_x(message)
 
+# changes a boolean setting for a server
+async def flip_setting(setting, guild, target_val, arg, message):
+	dictionary = None
+	index = -1
+	waiter = None
+	# if the enabled setting is trying to be changed
+	if setting == "enabled":
+		# link variables in this function to enabled setting variables
+		dictionary = enabled_in_guild
+		index = 1
+		waiter = enabled_waiter_for_guild
+	# if the alert_on setting is trying to be changed
+	elif setting == "alert_on":
+		# link variables in this function to alert_on setting variables
+		dictionary = alerton_in_guild
+		index = 4
+		waiter = alert_waiter_for_guild
+	else:
+		return
+	# if the bot is currently waiting to change this setting on a timer
+	if not waiter[guild] is None and not waiter[guild].cancelled() and not waiter[guild].done():
+		# cancel that timer
+		waiter[guild].cancel()
+	# if the setting is not already the desired value
+	if dictionary[guild] != target_val:
+		# change the setting
+		dictionary[guild] = target_val
+		# write the setting into the settings file
+		file_setting(guild, setting, dictionary[guild], index)
+	# if there is an argument
+	if not arg is None:
+		time = process_time(arg)
+		# if the argument is a valid time
+		if not time is None:
+			# set a timer to flip the setting
+			waiter[guild] = client.loop.create_task(wait_to_flip(setting, guild, time))
+			await react_with_check(message)
+		else:
+			await react_with_x(message)
+	else:
+		await react_with_check(message)
+
 # changes the value of a setting in a server's settings folder
-def file_setting(guild, name, value, index):
+def file_setting(guild, setting_name, value, index):
 	settings_file = f"Settings/server_{guild.id}/Settings.set"
 	settings = []
 	with open(settings_file, "r") as file:
 		settings = file.readlines()
 	if len(settings) > index:
-		settings[index] = f"{name}: {value}\n"
+		settings[index] = f"{setting_name}: {value}\n"
 	else:
-		settings.append(f"{name}: {value}\n")
+		settings.append(f"{setting_name}: {value}\n")
 	settings_str = ""
 	for s in settings:
 		settings_str += s
@@ -1107,10 +1103,12 @@ def process_time(arg):
 					return
 			# if the argument has 2 values
 			if len(time) == 2:
+				# turn "min:sec" into seconds
 				time[0] *= 60
 				time = time[0] + time[1]
 			# if the argument has 3 values
 			elif len(time) == 3:
+				# turn "hrs:min:sec" into seconds
 				time[0] *= 3600
 				time[1] *= 60
 				time = time[0] + time[1] + time[2]
@@ -1121,14 +1119,29 @@ def process_time(arg):
 	return time
 
 # starts a timer until the enabled flat for a server gets flipped
-async def wait_to_flip(dict, guild, time):
+async def wait_to_flip(setting, guild, time):
+	# waits a certain amount of time
 	await asyncio.sleep(time+1)
-	if dict == "t":
+	# if the enabled setting is trying to be flipped
+	if setting == "enabled":
+		# flip the setting and write the setting into the settings file
 		enabled_in_guild[guild] = not enabled_in_guild[guild]
 		file_setting(guild, "enabled", enabled_in_guild[guild], 1)
-	elif dict == "a":
-		alerton_for_guild[guild] = not alerton_for_guild[guild]
-		file_setting(guild, "alert_on", alerton_for_guild[guild], 4)
+		join_loop_running = not (task_for_guild[guild] is None or task_for_guild[guild].cancelled() or task_for_guild[guild].done())
+		# if there is no join loop task running currently
+		if enabled_in_guild[guild] and not join_loop_running:
+			# create one
+			task_for_guild[guild] = client.loop.create_task(join_loop(guild))
+		# if there is a join loop task running currently
+		elif not enabled_in_guild[guild] and join_loop_running:
+			# cancel it and leave the channel if the bot is connected to one
+			task_for_guild[guild].cancel()
+			await leave_channel(guild)
+	# if the alert_on setting is trying to be flipped
+	elif setting == "alert_on":
+		# flip it and change the write the setting into the settings file
+		alerton_in_guild[guild] = not alerton_in_guild[guild]
+		file_setting(guild, "alert_on", alerton_in_guild[guild], 4)
 
 # sets up the bot every time it joins a new server while running
 @client.event
