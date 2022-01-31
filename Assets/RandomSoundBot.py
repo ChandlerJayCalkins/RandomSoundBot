@@ -115,6 +115,8 @@ async def start_in_server(guild):
 	default_alerton = True
 	# default message that the bot sends when it joins a channel randomly
 	default_alert = ""
+	# default alert channel is the top channel the bot is allowed to read and send in
+	default_channel = get_alert_channel(guild)
 	with open("DefaultAlert.txt", "r") as file:
 		default_alert = file.read(2000).strip()
 	# if the server alread has a settings file, then read from it
@@ -230,30 +232,22 @@ async def start_in_server(guild):
 					channel_for_guild[guild] = client.get_channel(int(alert_channel))
 			# remake the alert channel setting
 			except:
-				default_channel = get_alert_channel(guild)
 				channel_for_guild[guild] = default_channel
 				# if there is a channel that the bot can message in
 				if not default_channel is None:
 					# prepare to output its id
 					default_channel = default_channel.id
-				# if there aren't any
-				else:
-					# prepare to output "None"
-					default_channel = "None"
+				# if not, then it outputs "None"
 				settings[6] = f"alert_channel: {default_channel}\n"
 				error_detected = True
 		# remake the alert channel setting
 		else:
-			default_channel = get_alert_channel(guild)
 			channel_for_guild[guild] = default_channel
 			# if there is a channel that the bot can message in
 			if not default_channel is None:
 				# prepare to output its id
 				default_channel = default_channel.id
-			# if there aren't any
-			else:
-				# prepare to output "None"
-				default_channel = "None"
+			# if not, then it outputs "None"
 			if len(settings) > 6:
 				settings[6] = f"alert_channel: {default_channel}\n"
 			else:
@@ -274,18 +268,25 @@ async def start_in_server(guild):
 	else:
 		# create a new one with default values
 		with open(settings_file, "a") as file:
+			# load all of the default settings in memory
+			enabled_in_guild[guild] = default_enabled
+			timer_for_guild[guild] = [default_min_timer, default_max_timer]
+			alerton_in_guild[guild] = default_alerton
+			alert_for_guild[guild] = default_alert
+			channel_for_guild[guild] = default_channel
+			# if there is a channel that the bot can message in
+			if not default_channel is None:
+				# prepare to output its id
+				default_channel = default_channel.id
+			# if not, then it outputs "None"
+			# write all of the settings to the settings file
 			file.write(f"server: {guild.id}\n")
 			file.write(f"enabled: {default_enabled}\n")
 			file.write(f"min_timer: {default_min_timer}\n")
 			file.write(f"max_timer: {default_max_timer}\n")
 			file.write(f"alert_on: {default_alerton}\n")
 			file.write(f"alert: {default_alert}\n")
-			file.write(f"alert_channel: {get_alert_channel(guild).id}\n")
-			enabled_in_guild[guild] = default_enabled
-			timer_for_guild[guild] = [default_min_timer, default_max_timer]
-			alerton_in_guild[guild] = default_alerton
-			alert_for_guild[guild] = default_alert
-			channel_for_guild[guild] = get_alert_channel(guild)
+			file.write(f"alert_channel: {default_channel}\n")
 	# declares a spot in the twaiter dictionary for this server
 	enabled_waiter_for_guild[guild] = None
 	# declares a spot in the awaiter dictionary for this server
