@@ -29,8 +29,8 @@
 
 # TODO
 # 1. Make it so the bot automatically disaplys the last time it restarted in the about me section every time it starts up (whenever that becomes a thing)
-# 2. Make it so the bot can log events and activity
-# 3. Make it so users can also input youtube urls into the bot with the add command
+# 2. Make it so users can also input youtube urls into the bot with the add command (maybe?)
+# 3. Make it so the bot can log events and activity
 
 import discord
 from discord import FFmpegPCMAudio
@@ -221,7 +221,7 @@ async def start_in_server(guild):
 		if len(settings) > 6 and settings[6].startswith("alert_channel:"):
 			# read the alert channel setting
 			try:
-				alert_channel = settings[6][14:].strip()
+				alert_channel = int(settings[6][14:].strip())
 				# if the setting says "None"
 				if alert_channel == "None":
 					channel_for_guild[guild] = None
@@ -283,6 +283,9 @@ async def start_in_server(guild):
 			file.write(f"alert_channel: {get_alert_channel(guild).id}\n")
 			enabled_in_guild[guild] = default_enabled
 			timer_for_guild[guild] = [default_min_timer, default_max_timer]
+			alerton_in_guild[guild] = default_alerton
+			alert_for_guild[guild] = default_alert
+			channel_for_guild[guild] = get_alert_channel(guild)
 	# declares a spot in the twaiter dictionary for this server
 	enabled_waiter_for_guild[guild] = None
 	# declares a spot in the awaiter dictionary for this server
@@ -300,12 +303,14 @@ async def join_loop(guild):
 		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]+1))
 		# gets a list of all voice channels with people in them currently
 		populated_channels = get_populated_vcs(guild)
-		# if there are any channels with people in them, then pick and random audio file, join a random channel with people, and play the file
-		if len(populated_channels) > 0:
+		# gets a list of all sounds in the server's sound folder
+		sounds = get_sounds(sound_directory)
+		# if there are any channels with people in them and the server has sounds in its sound folder
+		if len(populated_channels) > 0 and len(sounds) > 0:
 			# pick a random channel to join
 			channel = random.choice(populated_channels)
 			# pick a random sound to play
-			sound = random.choice(get_sounds(sound_directory))
+			sound = random.choice(sounds)
 			sound_path = f"{sound_directory}/{sound}"
 			# if the sound file exists
 			if os.path.isfile(sound_path):
