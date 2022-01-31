@@ -1,4 +1,13 @@
 # Discord bot that joins a random channel with people in it at random times, plays a random sound, then leaves
+# Things you can do with the bot:
+# 	Tell it to leave the voice channel it's in
+# 	Disable / enable it temporarily in your server
+# 	Add, remove, and rename custom sound files that the bot can play in your server (Requires roles called "Random Sound Bot Adder" and "Random Sound Bot Remover")
+# 	Change how often the bot randomly joins to play sounds
+# 	Ask the bot to join and play a certain sound
+# 	Change what alert message the bot sends when it joins a channel randomly to play a sound
+# 	Disable / enable alert messages temporarily in your server
+# 	Change what channel the bot sends alert messages in for your server
 
 # Permissions Required:
 # Read Messages/View Channels
@@ -8,24 +17,6 @@
 # Add Reactions
 # Connect
 # Speak
-
-# Recommended Permissions (for testing new features):
-# Change Nickname
-# Read Messages / View Channels
-# Send Messages
-# Create Public Threads
-# Create Private Threads
-# Send Messages in Threads
-# Embed Links
-# Attach Files
-# Read Message History
-# Use External Emojis
-# Use External Stickers
-# Add Reactions
-# Use Slash Commands
-# Connect
-# Speak
-# Video
 
 # TODO
 # 1. Make it so the bot automatically disaplys the last time it restarted in the about me section every time it starts up (whenever that becomes a thing)
