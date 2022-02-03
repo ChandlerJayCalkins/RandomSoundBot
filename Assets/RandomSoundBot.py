@@ -24,6 +24,7 @@
 
 import discord
 from discord import FFmpegPCMAudio
+from datetime import datetime
 import asyncio
 import random
 import os
@@ -291,7 +292,13 @@ async def join_loop(guild):
 	sound_directory = f"Sounds/server_{guild.id}"
 	while enabled_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
-		await asyncio.sleep(random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]+1))
+		random_wait_time = random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]+1)
+		await asyncio.sleep(random_wait_time)
+		voice_client = discord.utils.get(client.voice_clients, guild=guild)
+		# if the bot is already connected to a voice channel in this server, then wait until it leaves
+		if voice_client:
+			while voice_client.is_connected():
+				await asyncio.sleep(0.1)
 		# gets a list of all voice channels with people in them currently
 		populated_channels = get_populated_vcs(guild)
 		# gets a list of all sounds in the server's sound folder
@@ -305,11 +312,6 @@ async def join_loop(guild):
 			sound_path = f"{sound_directory}/{sound}"
 			# if the sound file exists
 			if os.path.isfile(sound_path):
-				voice_client = discord.utils.get(client.voice_clients, guild=guild)
-				# if the bot is already connected to a voice channel in this server, then wait until it leaves
-				if voice_client:
-					while voice_client.is_connected():
-						await asyncio.sleep(0.1)
 				# get the alert channel for the server
 				text_channel = channel_for_guild[guild]
 				# if there is a text channel for the bot to send alerts in
@@ -321,9 +323,36 @@ async def join_loop(guild):
 					if not last_message_was_alert and alerton_in_guild[guild] and len(alert) > 0:
 						# send an alert message
 						await text_channel.send(alert)
-				print(f"Now playing in {guild.name}: {sound}")
+				# logs the action for debugging
+				await log_action(f"Randomly playing sound (Sound: {sound}), (Channel Name: {channel.name}), (Channel ID: {channel.id})", guild.id)
 				# join the channel and play the sound
 				await play_sound(channel, sound_path)
+
+# logs an action in a server's log folder
+async def log_action(message, guild_id):
+	# gets the current datetime
+	current_datetime = datetime.now()
+	# gets a string of the current year and month
+	current_year = current_datetime.strftime("%Y")
+	current_month = current_datetime.strftime("%B")
+	log_dir = f"Logs/server_{guild_id}/{current_year}"
+	# if there isn't a folder for this year's logs
+	if not os.path.isdir(log_dir):
+		# create one
+		os.mkdir(log_dir)
+	log_dir += f"/{current_month}"
+	# if there isn't a folder for this month's logs
+	if not os.path.isdir(log_dir):
+		# create one
+		os.mkdir(log_dir)
+	# string of today's date
+	current_date_str = current_datetime.strftime("%Y-%m-%d")
+	# open a file stream in append mode to the log file for today
+	with open(f"{log_dir}/{current_date_str}.log", "a") as file:
+		# gets a string of the current time
+		current_time_str = current_datetime.strftime("%H:%M:%S")
+		# log the action in the file
+		file.write(f"{current_time_str}: {message}\n")
 
 # returns a list of all voice channels with at least one person in them
 def get_populated_vcs(guild):
@@ -389,12 +418,18 @@ async def leave_channel(guild):
 async def on_message(message):
 	# if the message has the command prefix and is not a dm
 	if message.content.startswith(prefix) and message.guild:
+		channel_name = message.channel.name
+		channel_id = message.channel.id
+		author_id = message.author.id
+		guild_id = message.guild.id
+		# logs the message in case it needs to be debugged
+		await log_action(f"Detected command prefix (Message ID: {message.id}), (Author ID: {author_id}), (Content: {message.content}) (Channel Name: {channel_name}), (Channel ID: {channel_id})", guild_id)
 		command = message.content.split()
 		# if the command has any arguments
 		if len(command) > 1:
 			adder_role = "Random Sound Bot Adder"
 			remover_role = "Random Sound Bot Remover"
-			sound_dir = f"Sounds/server_{message.guild.id}"
+			sound_dir = f"Sounds/server_{guild_id}"
 			perms = message.channel.permissions_for(message.guild.me)
 			# if help command
 			if command[1].lower() == "help":
@@ -1118,7 +1153,7 @@ def process_time(arg):
 # starts a timer until the enabled flat for a server gets flipped
 async def wait_to_flip(setting, guild, time):
 	# waits a certain amount of time
-	await asyncio.sleep(time+1)
+	await asyncio.sleep(time)
 	# if the enabled setting is trying to be flipped
 	if setting == "enabled":
 		# flip the setting and write the setting into the settings file
