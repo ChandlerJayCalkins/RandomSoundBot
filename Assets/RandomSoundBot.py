@@ -18,10 +18,6 @@
 # Connect
 # Speak
 
-# TODO
-# 1. Make it so the bot automatically disaplys the last time it restarted in the about me section every time it starts up (whenever that becomes a thing)
-# 2. Make it so the bot can log events and activity
-
 import discord
 from discord import FFmpegPCMAudio
 from datetime import datetime
