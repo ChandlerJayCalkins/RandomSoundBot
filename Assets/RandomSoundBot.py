@@ -59,7 +59,7 @@ channel_for_guild = {}
 # keeps track of currently running task for each server
 task_for_guild = {}
 
-# keeps track of timed stfu and on commands
+# keeps track of timed off and on commands
 enabled_waiter_for_guild = {}
 
 # keeps track of timed alerton and alertoff commands
@@ -433,35 +433,35 @@ async def on_message(message):
 				if perms.send_messages:
 					# define info for every command to reply with
 					example_prefix = f"`@{client.user.name}`"
-					help_info = f"{example_prefix} help {{command name (optional)}}:"
-					leave_info = f"{example_prefix} leave:"
-					stfu_info = f"{example_prefix} stfu {{time (optional)}}:"
-					on_info = f"{example_prefix} on {{time (optional)}}:"
-					onq_info = f"{example_prefix} on?:"
-					add_info = f"{example_prefix} add {{file attatchment(s)}}:"
-					remove_info = f"{example_prefix} remove {{file name(s)}}:"
-					rename_info = f"{example_prefix} rename {{file name}} {{new name}}:"
-					list_info = f"{example_prefix} list:"
-					give_info = f"{example_prefix} give {{file name(s)}}:"
-					timer_info = f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}:"
-					timerq_info = f"{example_prefix} timer?:"
-					reset_info = f"{example_prefix} reset:"
-					play_info = f"{example_prefix} play {{file name}}:"
-					alertoff_info = f"{example_prefix} alertoff {{time (optional)}}:"
-					alerton_info = f"{example_prefix} alerton {{time (optional)}}:"
-					alertonq_info = f"{example_prefix} alerton?:"
-					alert_info = f"{example_prefix} alert {{new alert message}}:"
-					alertq_info = f"{example_prefix} alert?:"
-					alertqf_info = f"{example_prefix} alert?f:"
-					channel_info = f"{example_prefix} channel {{new alert channel}}:"
-					channelq_info = f"{example_prefix} channel?:"
+					help_info = f"{example_prefix} help {{command name (optional)}}"
+					stfu_info = f"{example_prefix} stfu"
+					off_info = f"{example_prefix} off {{time (optional)}}"
+					on_info = f"{example_prefix} on {{time (optional)}}"
+					onq_info = f"{example_prefix} on?"
+					add_info = f"{example_prefix} add {{file attatchment(s)}}"
+					remove_info = f"{example_prefix} remove {{file name(s)}}"
+					rename_info = f"{example_prefix} rename {{file name}} {{new name}}"
+					list_info = f"{example_prefix} list"
+					give_info = f"{example_prefix} give {{file name(s)}}"
+					timer_info = f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}"
+					timerq_info = f"{example_prefix} timer?"
+					reset_info = f"{example_prefix} reset"
+					play_info = f"{example_prefix} play {{file name}}"
+					alertoff_info = f"{example_prefix} alertoff {{time (optional)}}"
+					alerton_info = f"{example_prefix} alerton {{time (optional)}}"
+					alertonq_info = f"{example_prefix} alerton?"
+					alert_info = f"{example_prefix} alert {{new alert message}}"
+					alertq_info = f"{example_prefix} alert?"
+					alertqf_info = f"{example_prefix} alert?f"
+					channel_info = f"{example_prefix} channel {{new alert channel}}"
+					channelq_info = f"{example_prefix} channel?"
 					
 					# returns a string that lists info about every command
 					def get_help_message():
 						help_message = "List of commands"
 						help_message += f"\n\n{help_info}"
-						help_message += f"\n\n{leave_info}"
 						help_message += f"\n\n{stfu_info}"
+						help_message += f"\n\n{off_info}"
 						help_message += f"\n\n{on_info}"
 						help_message += f"\n\n{onq_info}"
 						help_message += f"\n\n{add_info}"
@@ -494,37 +494,37 @@ async def on_message(message):
 							help_info += "\n> (As you've likely already found out)"
 							help_info += "\n> Examples:"
 							help_info += f"\n> {example_prefix} help"
-							help_info += f"\n> {example_prefix} help stfu"
+							help_info += f"\n> {example_prefix} help off"
 							help_info += f"\n> {example_prefix} help timer"
 							await message.reply(help_info)
-						elif command[2].lower() == "leave":
-							leave_info += "\n> Makes the bot leave the voice channel it's currently in"
-							leave_info += "\n> Example:"
-							leave_info += f"\n> {example_prefix} leave"
-							await message.reply(leave_info)
 						elif command[2].lower() == "stfu":
-							stfu_info += "\n> Makes the bot shut up and stop joining channels (for a certain amount of time if given an argument)"
-							stfu_info += "\n> If this command is given a time argument, the bot will be disabled for that much time, and then re-enable itself after the time has expired"
-							stfu_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							stfu_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
-							stfu_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used to re-enable it"
-							stfu_info += "\n> To re-enable the bot, either use the \"on\" command, or use this command again with an argument for how long until it re-enables"
-							stfu_info += "\n> Note: This command will reset the bot's waiting time to join a channel (like the reset command)"
-							stfu_info += "\n> Examples:"
+							stfu_info += "\n> Makes the bot leave the voice channel it's currently in"
+							stfu_info += "\n> Example:"
 							stfu_info += f"\n> {example_prefix} stfu"
-							stfu_info += f"\n> {example_prefix} stfu 60"
-							stfu_info += f"\n> {example_prefix} stfu 1:30:0"
-							stfu_info += f"\n> {example_prefix} stfu 30:0"
-							stfu_info += f"\n> {example_prefix} stfu 0:90:0"
-							stfu_info += f"\n> {example_prefix} stfu 0:120"
 							await message.reply(stfu_info)
+						elif command[2].lower() == "off":
+							off_info += "\n> Disables the bot from randomly joining channels (for a certain amount of time if given an argument)"
+							off_info += "\n> If this command is given a time argument, the bot will be disabled for that much time, and then re-enable itself after the time has expired"
+							off_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+							off_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+							off_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used to re-enable it"
+							off_info += "\n> To re-enable the bot, either use the \"on\" command, or use this command again with an argument for how long until it re-enables"
+							off_info += "\n> Note: This command will reset the bot's waiting time to join a channel (like the reset command)"
+							off_info += "\n> Examples:"
+							off_info += f"\n> {example_prefix} off"
+							off_info += f"\n> {example_prefix} off 60"
+							off_info += f"\n> {example_prefix} off 1:30:0"
+							off_info += f"\n> {example_prefix} off 30:0"
+							off_info += f"\n> {example_prefix} off 0:90:0"
+							off_info += f"\n> {example_prefix} off 0:120"
+							await message.reply(off_info)
 						elif command[2].lower() == "on":
 							on_info += "\n> Enables the bot to randomly join channels (for a certain amount of time if given an argument)"
 							on_info += "\n> If this command is given a time argument, the bot will stay enabled for that much time, and then disable itself after the time has expired"
 							on_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
 							on_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
 							on_info += "\n> If this command is not given any arguments, the bot will stay enabled until another command is used to disable it"
-							on_info += "\n> To disable the bot, either use the \"stfu\" command, or use this command again with an argument for how long until it should disable"
+							on_info += "\n> To disable the bot, either use the \"off\" command, or use this command again with an argument for how long until it should disable"
 							on_info += "\n> Note: When the bot re-enables after being disabled, its waiting time to join a channel will have been reset (like the reset command)"
 							on_info += "\n> Examples:"
 							on_info += f"\n> {example_prefix} on"
@@ -698,16 +698,16 @@ async def on_message(message):
 						await message.reply(get_help_message())
 				else:
 					await react_with_x(message)
-			# if leave command
-			elif command[1].lower() == "leave":
+			# if stfu (shut the fuck up) command
+			elif command[1].lower() == "stfu":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
 				if voice_client and voice_client.is_connected():
 					await leave_channel(message.guild)
 					await react_with_check(message)
 				else:
 					await react_with_x(message)
-			# if stfu (shut the fuck up) command
-			elif command[1].lower() == "stfu":
+			# if off command
+			elif command[1].lower() == "off":
 				task = task_for_guild[message.guild]
 				# if there is join loop task running right now
 				if not task is None and not task.cancelled() and not task.done():
