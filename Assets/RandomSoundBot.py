@@ -38,8 +38,9 @@ client = discord.Client()
 with open("BotToken.txt", "r") as f:
 	token = f.readline().strip()
 
-# string for the bot to detect commands
-prefix = ""
+# strings for the bot to detect commands
+desktop_prefix = ""
+mobile_prefix = ""
 
 # keeps track of which servers the bot is enabled in and which ones it's not
 enabled_in_guild = {}
@@ -68,10 +69,12 @@ alert_waiter_for_guild = {}
 # called as soon as the bot is fully online and operational
 @client.event
 async def on_ready():
-	# string that goes at the start of commands to help the bot detect the command
+	# strings that go at the start of commands to help the bot detect the command
 	# it is currently "@{botname}"
-	global prefix
-	prefix = f"<@!{client.user.id}> "
+	global desktop_prefix
+	global mobile_prefix
+	desktop_prefix = f"<@!{client.user.id}> "
+	mobile_prefix = f"<@{client.user.id}> "
 	
 	# sets up and starts running the bot for each server it's in simultaneously
 	for guild in client.guilds:
@@ -413,7 +416,7 @@ async def leave_channel(guild):
 @client.event
 async def on_message(message):
 	# if the message has the command prefix and is not a dm
-	if message.content.startswith(prefix) and message.guild:
+	if (message.content.startswith(desktop_prefix) or message.content.startswith(mobile_prefix)) and message.guild:
 		channel_name = message.channel.name
 		channel_id = message.channel.id
 		author_id = message.author.id
