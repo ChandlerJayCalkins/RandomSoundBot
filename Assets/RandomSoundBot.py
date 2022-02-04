@@ -446,7 +446,7 @@ async def on_message(message):
 					timer_info = f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}"
 					timerq_info = f"{example_prefix} timer?"
 					reset_info = f"{example_prefix} reset"
-					play_info = f"{example_prefix} play {{file name}}"
+					play_info = f"{example_prefix} play {{file name (optional)}}"
 					alertoff_info = f"{example_prefix} alertoff {{time (optional)}}"
 					alerton_info = f"{example_prefix} alerton {{time (optional)}}"
 					alertonq_info = f"{example_prefix} alerton?"
@@ -607,10 +607,13 @@ async def on_message(message):
 							reset_info += f"\n> {example_prefix} reset"
 							await message.reply(reset_info)
 						elif command[2].lower() == "play":
-							play_info += "\n> Makes the bot join your voice channel and play a sound from this server's sound list that you input"
+							play_info += "\n> Makes the bot join a voice channel and play a sound"
 							play_info += "\n> If the user is in a voice channel when this command is used, the bot will join the user's voice channel"
 							play_info += "\n> If the user is not in a voice channel when this command is used, the bot will pick a random channel with people in it to join"
+							play_info += "\n> If the command is given a file name of a sound as an argument, then the bot will play that sound"
+							play_info += "\n> If the command is not given any arguments, then the bot will play a random sound from the server's sound list"
 							play_info += "\n> Examples:"
+							play_info += f"\n> {example_prefix} play"
 							play_info += f"\n> {example_prefix} play example_file.mp3"
 							play_info += f"\n> {example_prefix} play example_file.wav"
 							await message.reply(play_info)
@@ -915,8 +918,8 @@ async def on_message(message):
 			# if play command
 			elif command[1].lower() == "play":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-				# if there are arguments and the bot isn't already in a voice channel
-				if len(command) > 2 and voice_client is None:
+				# if the bot isn't already in a voice channel
+				if voice_client is None:
 					channel = None
 					v_perms = None
 					# if the author is in a voice channel
@@ -933,13 +936,22 @@ async def on_message(message):
 							v_perms = channel.permissions_for(channel.guild.me)
 					# if the bot has a channel to join that they are allowed to join and speak in
 					if channel and v_perms and v_perms.connect and v_perms.speak:
-						sound_path = f"{sound_dir}/{command[2]}"
-						# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
-						if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_path):
+						sound_path = ""
+						# if the command has an argument
+						if len(command) > 2:
+							# prepare to play the sound given in the argument
+							sound_path = f"{sound_dir}/{command[2]}"
+							# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
+							if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_path):
+								# join the voice channel and play the sound
+								await play_sound(channel, sound_path)
+							else:
+								await react_with_x(message)
+						else:
+							# prepare to play a random sound
+							sound_path = f"{sound_dir}/{random.choice(get_sounds(sound_dir))}"
 							# join the voice channel and play the sound
 							await play_sound(channel, sound_path)
-						else:
-							await react_with_x(message)
 					else:
 						await react_with_x(message)
 				else:
