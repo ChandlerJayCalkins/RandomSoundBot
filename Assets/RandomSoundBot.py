@@ -915,8 +915,8 @@ async def on_message(message):
 			# if play command
 			elif command[1].lower() == "play":
 				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-				# if the bot is enabled in the server, there are arguments, and the bot isn't already in a voice channel
-				if enabled_in_guild[message.guild] and len(command) > 2 and voice_client is None:
+				# if there are arguments and the bot isn't already in a voice channel
+				if len(command) > 2 and voice_client is None:
 					channel = None
 					v_perms = None
 					# if the author is in a voice channel
