@@ -10,13 +10,13 @@
 # 	Change what channel the bot sends alert messages in for your server
 
 # Permissions Required:
-# Read Messages/View Channels
-# Send Messages
-# Attach Files
-# Read Message History
-# Add Reactions
-# Connect
-# Speak
+# 	Read Messages/View Channels
+# 	Send Messages
+# 	Attach Files
+# 	Read Message History
+# 	Add Reactions
+# 	Connect
+# 	Speak
 
 import discord
 from discord import FFmpegPCMAudio
