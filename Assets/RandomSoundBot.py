@@ -18,6 +18,7 @@
 # 	Connect
 # 	Speak
 
+from distutils.log import error
 import discord
 from discord import FFmpegPCMAudio
 from datetime import datetime
@@ -388,17 +389,28 @@ def get_alert_channel(guild):
 	return None
 
 # plays a sound in a voice channel
-async def play_sound(channel, sound_path):
+async def play_sound(channel, sound_path, message=None):
 	# connects to the voice channel
 	voice = await channel.connect()
-	# starts playing the audio
-	voice.play(FFmpegPCMAudio(sound_path))
-	# waits until the audio is done playing or until the bot is not in the channel anymore
-	while voice.is_playing() and channel.guild.voice_client.channel == channel:
-		await asyncio.sleep(0.1)
-	# waits for a bit since there's a bit of lag to register that the bot is still playing audio
-	await asyncio.sleep(0.5)
-	await leave_channel(channel.guild)
+	# tries to play the sound file
+	try:
+		# starts playing the audio
+		voice.play(FFmpegPCMAudio(sound_path))
+		# waits until the audio is done playing or until the bot is not in the channel anymore
+		while voice.is_playing() and channel.guild.voice_client.channel == channel:
+			await asyncio.sleep(0.1)
+		# waits for a bit since there's a bit of lag to register that the bot is still playing audio
+		await asyncio.sleep(0.5)
+		await leave_channel(channel.guild)
+	# if the sound file fails to play, send message saying it failed
+	except:
+		await leave_channel(channel.guild)
+		sound_file = sound_path[sound_path.rfind("/")+1:]
+		if not message is None:
+			sound_file = sound_path[sound_path.rfind("/")+1:]
+			await message.reply(f"Could not play sound file: {sound_file}")
+		else:
+			await channel_for_guild[channel.guild].send(f"Could not play sound file: {sound_file}")
 
 # attempts to disconnect the bot from a voice channel in a server
 async def leave_channel(guild):
@@ -947,7 +959,7 @@ async def on_message(message):
 							# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
 							if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_path):
 								# join the voice channel and play the sound
-								await play_sound(channel, sound_path)
+								await play_sound(channel, sound_path, message=message)
 							else:
 								await react_with_x(message)
 						else:
