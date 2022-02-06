@@ -1173,6 +1173,10 @@ def process_time(arg):
 				return
 		else:
 			return
+	# if the inputted time comes out to be a negative number
+	if time < 0:
+		# then return None (which will be interpretted as an error)
+		time = None
 	return time
 
 # starts a timer until the enabled flat for a server gets flipped
