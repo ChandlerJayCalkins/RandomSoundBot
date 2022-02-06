@@ -768,9 +768,11 @@ async def on_message(message):
 					# check each file in the message
 					for file in message.attachments:
 						is_sound_file = file.filename.endswith(".mp3") or file.filename.endswith(".wav")
-						# if the file is an mp3 or wav file, the file doesn't contain a "/" or "\" in the name (for security redundancy), 
+						no_slashes = not "/" in file.filename and not "\\" in file.filename
+						not_a_dupe = not file.filename in get_sounds(sound_dir)
+						# if the file is an mp3 or wav file, the file doesn't contain a "/" or "\" in the name (for security redundancy), there isn't already a file with that name,
 						# the file name is less than 128 characters long, and the file size is less than 10mb (discord limitation)
-						if is_sound_file and not "/" in file.filename and not "\\" in file.filename and len(file.filename) < 128 and file.size < 10_000_000:
+						if is_sound_file and no_slashes and not_a_dupe and len(file.filename) < 128 and file.size < 10_000_000:
 							# save the file to the directory of the server the message was from
 							await file.save(f"{sound_dir}/{file.filename}")
 						# if the file couldn't be saved, add it to the error list
@@ -819,7 +821,7 @@ async def on_message(message):
 					old_dir = f"{sound_dir}/{command[2]}"
 					no_slashes = not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3]
 					correct_file_extensions = (command[2].endswith(".mp3") and command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))
-					not_a_dupe = get_sounds(sound_dir).count(command[3]) < 1
+					not_a_dupe = not command[3] in get_sounds(sound_dir)
 					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, 
 					# the new file name is not already being used, and the new file name is less than 128 characters long
 					if os.path.isfile(old_dir) and no_slashes and correct_file_extensions and not_a_dupe and len(command[3]) < 128:
