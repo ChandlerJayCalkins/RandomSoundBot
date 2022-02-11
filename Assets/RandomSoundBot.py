@@ -18,6 +18,7 @@
 # 	Connect
 # 	Speak
 
+from cgitb import enable
 from distutils.log import error
 import discord
 from discord import FFmpegPCMAudio
@@ -292,7 +293,7 @@ async def join_loop(guild):
 	sound_directory = f"Sounds/server_{guild.id}"
 	while enabled_in_guild[guild]:
 		# waits random amount of time as specified by what the server sets it to (1 min - 2 hours default)
-		random_wait_time = random.randrange(timer_for_guild[guild][0], timer_for_guild[guild][1]+1)
+		random_wait_time = random.uniform(timer_for_guild[guild][0], timer_for_guild[guild][1])
 		await asyncio.sleep(random_wait_time)
 		voice_client = discord.utils.get(client.voice_clients, guild=guild)
 		# if the bot is already connected to a voice channel in this server, then wait until it leaves
@@ -389,7 +390,7 @@ def get_alert_channel(guild):
 	return None
 
 # plays a sound in a voice channel
-async def play_sound(channel, sound_path, message=None):
+async def play_sound(channel, sound_path):
 	# connects to the voice channel
 	voice = await channel.connect()
 	# tries to play the sound file
@@ -405,12 +406,6 @@ async def play_sound(channel, sound_path, message=None):
 	# if the sound file fails to play, send message saying it failed
 	except:
 		await leave_channel(channel.guild)
-		sound_file = sound_path[sound_path.rfind("/")+1:]
-		if not message is None:
-			sound_file = sound_path[sound_path.rfind("/")+1:]
-			await message.reply(f"Could not play sound file: {sound_file}")
-		else:
-			await channel_for_guild[channel.guild].send(f"Could not play sound file: {sound_file}")
 
 # attempts to disconnect the bot from a voice channel in a server
 async def leave_channel(guild):
@@ -726,6 +721,12 @@ async def on_message(message):
 					await react_with_x(message)
 			# if off command
 			elif command[1].lower() == "off":
+				arg = None
+				# if there is an argument, get it
+				if len(command) > 2:
+					arg = command[2]
+				# flip the enabled setting
+				await flip_setting("enabled", message.guild, False, arg, message)
 				task = task_for_guild[message.guild]
 				# if there is join loop task running right now
 				if not task is None and not task.cancelled() and not task.done():
@@ -733,25 +734,19 @@ async def on_message(message):
 					task_for_guild[message.guild].cancel()
 				# leave the voice channel
 				await leave_channel(message.guild)
-				arg = None
-				# if there is an argument, get it
-				if len(command) > 2:
-					arg = command[2]
-				# flip the enabled setting
-				await flip_setting("enabled", message.guild, False, arg, message)
 			# if on command
 			elif command[1].lower() == "on":
-				task = task_for_guild[message.guild]
-				# if there aren't any join loop tasks running currently
-				if task is None or task.cancelled() or task.done():
-					# create one for the server
-					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
 				arg = None
 				# if there is an argument, get it
 				if len(command) > 2:
 					arg = command[2]
 				# flip the enabled setting
 				await flip_setting("enabled", message.guild, True, arg, message)
+				task = task_for_guild[message.guild]
+				# if there aren't any join loop tasks running currently
+				if task is None or task.cancelled() or task.done():
+					# create one for the server
+					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
 			# if on? command
 			elif command[1].lower() == "on?":
 				# if the bot is enabled, react with checkmark
@@ -961,7 +956,7 @@ async def on_message(message):
 							# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
 							if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_path):
 								# join the voice channel and play the sound
-								await play_sound(channel, sound_path, message=message)
+								await play_sound(channel, sound_path)
 							else:
 								await react_with_x(message)
 						else:
