@@ -422,638 +422,665 @@ async def leave_channel(guild):
 # handles commands
 @client.event
 async def on_message(message):
-	# if the message has the command prefix and is not a dm
-	if (message.content.startswith(desktop_prefix) or message.content.startswith(mobile_prefix)) and message.guild:
-		channel_name = message.channel.name
-		channel_id = message.channel.id
-		author_id = message.author.id
-		guild_id = message.guild.id
-		# logs the message in case it needs to be debugged
-		await log_action(f"Detected command prefix (Message ID: {message.id}), (Author ID: {author_id}), (Content: {message.content}) (Channel Name: {channel_name}), (Channel ID: {channel_id})", guild_id)
-		command = message.content.split()
-		# if the command has any arguments
-		if len(command) > 1:
-			adder_role = "Random Sound Bot Adder"
-			remover_role = "Random Sound Bot Remover"
-			sound_dir = f"Sounds/server_{guild_id}"
-			perms = message.channel.permissions_for(message.guild.me)
-			# if help command
-			if command[1].lower() == "help":
-				# if the bot has permission to send messages in this channel
-				if perms.send_messages:
-					# define info for every command to reply with
-					example_prefix = f"`@{client.user.name}`"
-					help_info = f"{example_prefix} help {{command name (optional)}}"
-					stfu_info = f"{example_prefix} stfu"
-					off_info = f"{example_prefix} off {{time (optional)}}"
-					on_info = f"{example_prefix} on {{time (optional)}}"
-					onq_info = f"{example_prefix} on?"
-					add_info = f"{example_prefix} add {{file attatchment(s)}}"
-					remove_info = f"{example_prefix} remove {{file name(s)}}"
-					rename_info = f"{example_prefix} rename {{file name}} {{new name}}"
-					list_info = f"{example_prefix} list"
-					give_info = f"{example_prefix} give {{file name(s)}}"
-					timer_info = f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}"
-					timerq_info = f"{example_prefix} timer?"
-					reset_info = f"{example_prefix} reset"
-					play_info = f"{example_prefix} play {{file name (optional)}}"
-					alertoff_info = f"{example_prefix} alertoff {{time (optional)}}"
-					alerton_info = f"{example_prefix} alerton {{time (optional)}}"
-					alertonq_info = f"{example_prefix} alerton?"
-					alert_info = f"{example_prefix} alert {{new alert message}}"
-					alertq_info = f"{example_prefix} alert?"
-					alertqf_info = f"{example_prefix} alert?f"
-					channel_info = f"{example_prefix} channel {{new alert channel}}"
-					channelq_info = f"{example_prefix} channel?"
-					
-					# returns a string that lists info about every command
-					def get_help_message():
-						help_message = "List of commands"
-						help_message += f"\n\n{help_info}"
-						help_message += f"\n\n{stfu_info}"
-						help_message += f"\n\n{off_info}"
-						help_message += f"\n\n{on_info}"
-						help_message += f"\n\n{onq_info}"
-						help_message += f"\n\n{add_info}"
-						help_message += f"\n\n{remove_info}"
-						help_message += f"\n\n{rename_info}"
-						help_message += f"\n\n{list_info}"
-						help_message += f"\n\n{give_info}"
-						help_message += f"\n\n{timer_info}"
-						help_message += f"\n\n{timerq_info}"
-						help_message += f"\n\n{reset_info}"
-						help_message += f"\n\n{play_info}"
-						help_message += f"\n\n{alertoff_info}"
-						help_message += f"\n\n{alerton_info}"
-						help_message += f"\n\n{alertonq_info}"
-						help_message += f"\n\n{alert_info}"
-						help_message += f"\n\n{alertq_info}"
-						help_message += f"\n\n{alertqf_info}"
-						help_message += f"\n\n{channel_info}"
-						help_message += f"\n\n{channelq_info}"
-						help_message += f"\n\nType \"{example_prefix} help {{command name}}\" for examples and more info about a command (Ex: \"{example_prefix} help timer\")"
-						return help_message
+	# if the message is not a DM and the message is not from the bot (to prevent recursion)
+	if message.guild and message.author.id != client.user.id:
+		# if the message has the command prefix
+		if (message.content.startswith(desktop_prefix) or message.content.startswith(mobile_prefix)):
+			channel_name = message.channel.name
+			channel_id = message.channel.id
+			author_id = message.author.id
+			guild_id = message.guild.id
+			# logs the message in case it needs to be debugged
+			await log_action(f"Detected command (Message ID: {message.id}), (Author ID: {author_id}), (Content: {message.content}) (Channel Name: {channel_name}), (Channel ID: {channel_id})", guild_id)
+			command = message.content.split()
+			# if the command has any arguments
+			if len(command) > 1:
+				adder_role = "Random Sound Bot Adder"
+				remover_role = "Random Sound Bot Remover"
+				sound_dir = f"Sounds/server_{guild_id}"
+				perms = message.channel.permissions_for(message.guild.me)
+				# if help command
+				if command[1].lower() == "help":
+					# if the bot has permission to send messages in this channel
+					if perms.send_messages:
+						# define info for every command to reply with
+						example_prefix = f"`@{client.user.name}`"
+						help_info = f"{example_prefix} help {{command name (optional)}}"
+						stfu_info = f"{example_prefix} stfu"
+						off_info = f"{example_prefix} off {{time (optional)}}"
+						on_info = f"{example_prefix} on {{time (optional)}}"
+						onq_info = f"{example_prefix} on?"
+						add_info = f"{example_prefix} add {{file attatchment(s)}}"
+						remove_info = f"{example_prefix} remove {{file name(s)}}"
+						rename_info = f"{example_prefix} rename {{file name}} {{new name}}"
+						list_info = f"{example_prefix} list"
+						give_info = f"{example_prefix} give {{file name(s)}}"
+						timer_info = f"{example_prefix} timer {{minimum frequency}} {{maximum frequency}}"
+						timerq_info = f"{example_prefix} timer?"
+						reset_info = f"{example_prefix} reset"
+						play_info = f"{example_prefix} play {{file name (optional)}}"
+						alertoff_info = f"{example_prefix} alertoff {{time (optional)}}"
+						alerton_info = f"{example_prefix} alerton {{time (optional)}}"
+						alertonq_info = f"{example_prefix} alerton?"
+						alert_info = f"{example_prefix} alert {{new alert message}}"
+						alertq_info = f"{example_prefix} alert?"
+						alertqf_info = f"{example_prefix} alert?f"
+						channel_info = f"{example_prefix} channel {{new alert channel}}"
+						channelq_info = f"{example_prefix} channel?"
+						
+						# returns a string that lists info about every command
+						def get_help_message():
+							help_message = "List of commands"
+							help_message += f"\n\n{help_info}"
+							help_message += f"\n\n{stfu_info}"
+							help_message += f"\n\n{off_info}"
+							help_message += f"\n\n{on_info}"
+							help_message += f"\n\n{onq_info}"
+							help_message += f"\n\n{add_info}"
+							help_message += f"\n\n{remove_info}"
+							help_message += f"\n\n{rename_info}"
+							help_message += f"\n\n{list_info}"
+							help_message += f"\n\n{give_info}"
+							help_message += f"\n\n{timer_info}"
+							help_message += f"\n\n{timerq_info}"
+							help_message += f"\n\n{reset_info}"
+							help_message += f"\n\n{play_info}"
+							help_message += f"\n\n{alertoff_info}"
+							help_message += f"\n\n{alerton_info}"
+							help_message += f"\n\n{alertonq_info}"
+							help_message += f"\n\n{alert_info}"
+							help_message += f"\n\n{alertq_info}"
+							help_message += f"\n\n{alertqf_info}"
+							help_message += f"\n\n{channel_info}"
+							help_message += f"\n\n{channelq_info}"
+							help_message += f"\n\nType \"{example_prefix} help {{command name}}\" for examples and more info about a command (Ex: \"{example_prefix} help timer\")"
+							return help_message
 
-					# if there is an argument to the help command
-					if len(command) > 2:
-						# reply with info about the command in the argument
-						if command[2].lower() == "help":
-							help_info += "\n> Gives descriptions of how to use all or one of this bot's commands"
-							help_info += "\n> If this command is not given any arguments, it will list brief descriptions of all commands this bot has"
-							help_info += "\n> If this command is given the name of a command as an argument, it will list some more info about the command along with some examples"
-							help_info += "\n> (As you've likely already found out)"
-							help_info += "\n> Examples:"
-							help_info += f"\n> {example_prefix} help"
-							help_info += f"\n> {example_prefix} help off"
-							help_info += f"\n> {example_prefix} help timer"
-							await message.reply(help_info)
-						elif command[2].lower() == "stfu":
-							stfu_info += "\n> Makes the bot leave the voice channel it's currently in"
-							stfu_info += "\n> Example:"
-							stfu_info += f"\n> {example_prefix} stfu"
-							await message.reply(stfu_info)
-						elif command[2].lower() == "off":
-							off_info += "\n> Disables the bot from randomly joining channels (for a certain amount of time if given an argument)"
-							off_info += "\n> If this command is given a time argument, the bot will be disabled for that much time, and then re-enable itself after the time has expired"
-							off_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							off_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
-							off_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used to re-enable it"
-							off_info += "\n> To re-enable the bot, either use the \"on\" command, or use this command again with an argument for how long until it re-enables"
-							off_info += "\n> Note: This command will reset the bot's waiting time to join a channel (like the reset command)"
-							off_info += "\n> Examples:"
-							off_info += f"\n> {example_prefix} off"
-							off_info += f"\n> {example_prefix} off 60"
-							off_info += f"\n> {example_prefix} off 1:30:0"
-							off_info += f"\n> {example_prefix} off 30:0"
-							off_info += f"\n> {example_prefix} off 0:90:0"
-							off_info += f"\n> {example_prefix} off 0:120"
-							await message.reply(off_info)
-						elif command[2].lower() == "on":
-							on_info += "\n> Enables the bot to randomly join channels (for a certain amount of time if given an argument)"
-							on_info += "\n> If this command is given a time argument, the bot will stay enabled for that much time, and then disable itself after the time has expired"
-							on_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							on_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
-							on_info += "\n> If this command is not given any arguments, the bot will stay enabled until another command is used to disable it"
-							on_info += "\n> To disable the bot, either use the \"off\" command, or use this command again with an argument for how long until it should disable"
-							on_info += "\n> Note: When the bot re-enables after being disabled, its waiting time to join a channel will have been reset (like the reset command)"
-							on_info += "\n> Examples:"
-							on_info += f"\n> {example_prefix} on"
-							on_info += f"\n> {example_prefix} on 60"
-							on_info += f"\n> {example_prefix} on 1:30:0"
-							on_info += f"\n> {example_prefix} on 30:0"
-							on_info += f"\n> {example_prefix} on 0:90:0"
-							on_info += f"\n> {example_prefix} on 0:120"
-							await message.reply(on_info)
-						elif command[2].lower() == "on?":
-							onq_info += "\n> Tells you if the bot is currently enabled or disabled in this server"
-							onq_info += "\n> Example:"
-							onq_info += f"\n> {example_prefix} on?"
-							await message.reply(onq_info)
-						elif command[2].lower() == "add":
-							add_info += "\n> Adds sounds to this server's sound list if you attach mp3 or wav files"
-							add_info += "\n> In order for this command to work:"
-							add_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
-							add_info += "\n> The attached files must be in the same message as the command"
-							add_info += "\n> The bot will skip over files that are over 10mb in size, have a file name that is already taken, or have file names longer than 128 characters"
-							add_info += "\n> Examples:"
-							add_info += f"\n> {example_prefix} add {{attached file: example_file.mp3}}"
-							add_info += f"\n> {example_prefix} add {{attached file: example_file_1.wav}} {{attached file: example_file_2.mp3}}"
-							await message.reply(add_info)
-						elif command[2].lower() == "remove":
-							remove_info += "\n> Deletes any files listed from this server's sound list"
-							remove_info += "\n> In order for this command to work, the user must have a role with the name \"Random Sound Bot Remover\" in the server"
-							remove_info += "\n> Examples:"
-							remove_info += f"\n> {example_prefix} remove example_file.mp3"
-							remove_info += f"\n> {example_prefix} remove example_file_1.wav example_file_2.mp3"
-							await message.reply(remove_info)
-						elif command[2].lower() == "rename":
-							rename_info += "\n> Renames a file in this server's sound list"
-							rename_info += "\n> In order for this command to work:"
-							rename_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
-							rename_info += "\n> The file extension of the new name must match the file extension of the old name"
-							rename_info += "\n> The new file name cannot be the same as any existing files"
-							rename_info += "\n> The new file name must not contain any slashes or backslashes"
-							rename_info += "\n> The new file name must be less than 128 characters long"
-							rename_info += "\n> Examples:"
-							rename_info += f"\n> {example_prefix} rename old_file_name.mp3 new_file_name.mp3"
-							rename_info += f"\n> {example_prefix} rename old_file_name.wav new_file_name.wav"
-							await message.reply(rename_info)
-						elif command[2].lower() == "list":
-							list_info += "\n> Sends all of the sound files that this server has to use"
-							list_info += "\n> If there enough characters in the list (>2000), this command will take several replies to complete"
-							list_info += "\n> Example:"
-							list_info += f"\n> {example_prefix} list"
-							await message.reply(list_info)
-						elif command[2].lower() == "give":
-							give_info += "\n> Sends copies of sound files that are being used on this server"
-							give_info += "\n> If you request more than 10 files, this command will take multiple replies to complete"
-							give_info += "\n> Examples:"
-							give_info += f"\n> {example_prefix} give example_file.mp3"
-							give_info += f"\n> {example_prefix} give example_file_1.wav example_file_2.mp3"
-							await message.reply(give_info)
-						elif command[2].lower() == "timer":
-							timer_info += "\n> Changes the frequency of when the bot joins channels"
-							timer_info += "\n> Arguments must either be a positive number of seconds, or be in colon format"
-							timer_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
-							timer_info += "\n> Note: This command does not automatically reset the bot's current countdown to join"
-							timer_info += "\n> In other words, this command will not take effect until either the next time the bot joins, or the \"reset\" command is used"
-							timer_info += "\n> Examples:"
-							timer_info += f"\n> {example_prefix} timer 60 120"
-							timer_info += f"\n> {example_prefix} timer 0:30:0 1:0:0"
-							timer_info += f"\n> {example_prefix} timer 15:0 60:0"
-							timer_info += f"\n> {example_prefix} timer 0:0:30 3600"
-							timer_info += f"\n> {example_prefix} timer 60:0 0:90:0"
-							timer_info += f"\n> {example_prefix} timer 0 60:0"
-							await message.reply(timer_info)
-						elif command[2].lower() == "timer?":
-							timerq_info += "\n> Tells you the time range for how often the bot will randomly join"
-							timerq_info += "\n> Example:"
-							timerq_info += f"\n> {example_prefix} timer?"
-							await message.reply(timerq_info)
-						elif command[2].lower() == "reset":
-							reset_info += "\n> Resets the bot's waiting time to join"
-							reset_info += "\n> Use this command after using the \"timer\" command if you want the new frequency you inputted to take effect before the next time the bot joins a channel"
-							reset_info += "\n> Example:"
-							reset_info += f"\n> {example_prefix} reset"
-							await message.reply(reset_info)
-						elif command[2].lower() == "play":
-							play_info += "\n> Makes the bot join a voice channel and play a sound"
-							play_info += "\n> If the user is in a voice channel when this command is used, the bot will join the user's voice channel"
-							play_info += "\n> If the user is not in a voice channel when this command is used, the bot will pick a random channel with people in it to join"
-							play_info += "\n> If the command is given a file name of a sound as an argument, then the bot will play that sound"
-							play_info += "\n> If the command is not given any arguments, then the bot will play a random sound from the server's sound list"
-							play_info += "\n> Examples:"
-							play_info += f"\n> {example_prefix} play"
-							play_info += f"\n> {example_prefix} play example_file.mp3"
-							play_info += f"\n> {example_prefix} play example_file.wav"
-							await message.reply(play_info)
-						elif command[2].lower() == "alertoff":
-							alertoff_info += "\n> Disables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
-							alertoff_info += "\n> If this command is given a time argument, alert messages will be disabled for that much time, and then be re-enabled after the time has expired"
-							alertoff_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							alertoff_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
-							alertoff_info += "\n> If this command is not given any arguments, alert messages will stay disabled until another command is used to re-enable them"
-							alertoff_info += "\n> To re-enable alert messages, either use the \"alerton\" command, or use this command again with an argument for how long until they re-enable"
-							alertoff_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							alertoff_info += "\n> Examples:"
-							alertoff_info += f"\n> {example_prefix} alertoff"
-							alertoff_info += f"\n> {example_prefix} alertoff 60"
-							alertoff_info += f"\n> {example_prefix} alertoff 1:30:0"
-							alertoff_info += f"\n> {example_prefix} alertoff 30:0"
-							alertoff_info += f"\n> {example_prefix} alertoff 0:90:0"
-							alertoff_info += f"\n> {example_prefix} alertoff 0:120"
-							await message.reply(alertoff_info)
-						elif command[2].lower() == "alerton":
-							alerton_info += "\n> Enables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
-							alerton_info += "\n> If this command is given a time argument, alert messages will stay enabled for that much time, and then be disabled after the time has expired"
-							alerton_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
-							alerton_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
-							alerton_info += "\n> If this command is not given any arguments, alert messages will stay enabled until another command is used to disable them"
-							alerton_info += "\n> To disable alert messages, either use the \"alertoff\" command, or use this command again with an argument for how long until they disable"
-							alerton_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							alerton_info += "\n> Examples:"
-							alerton_info += f"\n> {example_prefix} alerton"
-							alerton_info += f"\n> {example_prefix} alerton 60"
-							alerton_info += f"\n> {example_prefix} alerton 1:30:0"
-							alerton_info += f"\n> {example_prefix} alerton 30:0"
-							alerton_info += f"\n> {example_prefix} alerton 0:90:0"
-							alerton_info += f"\n> {example_prefix} alerton 0:120"
-							await message.reply(alerton_info)
-						elif command[2].lower() == "alerton?":
-							alertonq_info += "\n> Tells you if the bot's alert messages are currently enabled or disabled in this server"
-							alertonq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							alertonq_info += "\n> Example:"
-							alertonq_info += f"\n> {example_prefix} alerton?"
-							await message.reply(alertonq_info)
-						elif command[2].lower() == "alert":
-							alert_info += "\n> Changes the alert message that the bot sends when it joins a channel randomly in this server"
-							alert_info += "\n> This command will only take the first 2000 characters of the input due to the discord message size limit"
-							alert_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							alert_info += "\n> Examples:"
-							alert_info += f"\n> {example_prefix} alert New Alert Message"
-							alert_info += f"\n> {example_prefix} alert __Alert Message Underlined With Discord Formatting__"
-							alert_info += f"\n> {example_prefix} alert **CHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOS**"
-							await message.reply(alert_info)
-						elif command[2].lower() == "alert?":
-							alertq_info += "\n> Tells you what the bot's current alert message is for this server that it uses when it joins a channel randomly"
-							alertq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							alertq_info += "\n> Example:"
-							alertq_info += f"\n> {example_prefix} alert?"
-							await message.reply(alertq_info)
-						elif command[2].lower() == "alert?f":
-							alertqf_info += "\n> Gives you the un-formatted, raw characters of the bot's current alert message for this server"
-							alertqf_info += "\n> Note: This command may send out triple backticks (\"\\`\\`\\`\") in alert messages like this (\"\\\\\\`\\\\\\`\\\\\\`\")"
-							alertqf_info += "\n> This is due to the fact that the discord developers forgot to make functioning escapes for the code block symbols"
-							alertqf_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							alertqf_info += "\n> Example:"
-							alertqf_info += f"\n> {example_prefix} alert?f"
-							await message.reply(alertqf_info)
-						elif command[2].lower() == "channel":
-							channel_info += "\n> Changes the channel that the bot sends alert messages in"
-							channel_info += "\n> This command will not work if it is not linked a channel that the bot has permission to both read and send messages in"
-							channel_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							channel_info += "\n> Examples:"
-							channel_info += f"\n> {example_prefix} channel ``#general``"
-							channel_info += f"\n> {example_prefix} channel ``#new-alert-channel``"
-							await message.reply(channel_info)
-						elif command[2].lower() == "channel?":
-							channelq_info += "\n> Tells you what channel the bot is currently using to send alert messages in"
-							channelq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
-							channelq_info += "\n> Example:"
-							channelq_info += f"\n> {example_prefix} channel?"
-							await message.reply(channelq_info)
-						# otherwise reply with info about every command
+						# if there is an argument to the help command
+						if len(command) > 2:
+							# reply with info about the command in the argument
+							if command[2].lower() == "help":
+								help_info += "\n> Gives descriptions of how to use all or one of this bot's commands"
+								help_info += "\n> If this command is not given any arguments, it will list brief descriptions of all commands this bot has"
+								help_info += "\n> If this command is given the name of a command as an argument, it will list some more info about the command along with some examples"
+								help_info += "\n> (As you've likely already found out)"
+								help_info += "\n> Examples:"
+								help_info += f"\n> {example_prefix} help"
+								help_info += f"\n> {example_prefix} help off"
+								help_info += f"\n> {example_prefix} help timer"
+								await message.reply(help_info)
+							elif command[2].lower() == "stfu":
+								stfu_info += "\n> Makes the bot leave the voice channel it's currently in"
+								stfu_info += "\n> Example:"
+								stfu_info += f"\n> {example_prefix} stfu"
+								await message.reply(stfu_info)
+							elif command[2].lower() == "off":
+								off_info += "\n> Disables the bot from randomly joining channels (for a certain amount of time if given an argument)"
+								off_info += "\n> If this command is given a time argument, the bot will be disabled for that much time, and then re-enable itself after the time has expired"
+								off_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+								off_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+								off_info += "\n> If this command is not given any arguments, the bot will stay disabled until another command is used to re-enable it"
+								off_info += "\n> To re-enable the bot, either use the \"on\" command, or use this command again with an argument for how long until it re-enables"
+								off_info += "\n> Note: This command will reset the bot's waiting time to join a channel (like the reset command)"
+								off_info += "\n> Examples:"
+								off_info += f"\n> {example_prefix} off"
+								off_info += f"\n> {example_prefix} off 60"
+								off_info += f"\n> {example_prefix} off 1:30:0"
+								off_info += f"\n> {example_prefix} off 30:0"
+								off_info += f"\n> {example_prefix} off 0:90:0"
+								off_info += f"\n> {example_prefix} off 0:120"
+								await message.reply(off_info)
+							elif command[2].lower() == "on":
+								on_info += "\n> Enables the bot to randomly join channels (for a certain amount of time if given an argument)"
+								on_info += "\n> If this command is given a time argument, the bot will stay enabled for that much time, and then disable itself after the time has expired"
+								on_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+								on_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+								on_info += "\n> If this command is not given any arguments, the bot will stay enabled until another command is used to disable it"
+								on_info += "\n> To disable the bot, either use the \"off\" command, or use this command again with an argument for how long until it should disable"
+								on_info += "\n> Note: When the bot re-enables after being disabled, its waiting time to join a channel will have been reset (like the reset command)"
+								on_info += "\n> Examples:"
+								on_info += f"\n> {example_prefix} on"
+								on_info += f"\n> {example_prefix} on 60"
+								on_info += f"\n> {example_prefix} on 1:30:0"
+								on_info += f"\n> {example_prefix} on 30:0"
+								on_info += f"\n> {example_prefix} on 0:90:0"
+								on_info += f"\n> {example_prefix} on 0:120"
+								await message.reply(on_info)
+							elif command[2].lower() == "on?":
+								onq_info += "\n> Tells you if the bot is currently enabled or disabled in this server"
+								onq_info += "\n> Example:"
+								onq_info += f"\n> {example_prefix} on?"
+								await message.reply(onq_info)
+							elif command[2].lower() == "add":
+								add_info += "\n> Adds sounds to this server's sound list if you attach mp3 or wav files"
+								add_info += "\n> In order for this command to work:"
+								add_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
+								add_info += "\n> The attached files must be in the same message as the command"
+								add_info += "\n> The bot will skip over files that are over 10mb in size, have a file name that is already taken, or have file names longer than 128 characters"
+								add_info += "\n> Examples:"
+								add_info += f"\n> {example_prefix} add {{attached file: example_file.mp3}}"
+								add_info += f"\n> {example_prefix} add {{attached file: example_file_1.wav}} {{attached file: example_file_2.mp3}}"
+								await message.reply(add_info)
+							elif command[2].lower() == "remove":
+								remove_info += "\n> Deletes any files listed from this server's sound list"
+								remove_info += "\n> In order for this command to work, the user must have a role with the name \"Random Sound Bot Remover\" in the server"
+								remove_info += "\n> Examples:"
+								remove_info += f"\n> {example_prefix} remove example_file.mp3"
+								remove_info += f"\n> {example_prefix} remove example_file_1.wav example_file_2.mp3"
+								await message.reply(remove_info)
+							elif command[2].lower() == "rename":
+								rename_info += "\n> Renames a file in this server's sound list"
+								rename_info += "\n> In order for this command to work:"
+								rename_info += "\n> The user must have a role with the name \"Random Sound Bot Adder\" in the server"
+								rename_info += "\n> The file extension of the new name must match the file extension of the old name"
+								rename_info += "\n> The new file name cannot be the same as any existing files"
+								rename_info += "\n> The new file name must not contain any slashes or backslashes"
+								rename_info += "\n> The new file name must be less than 128 characters long"
+								rename_info += "\n> Examples:"
+								rename_info += f"\n> {example_prefix} rename old_file_name.mp3 new_file_name.mp3"
+								rename_info += f"\n> {example_prefix} rename old_file_name.wav new_file_name.wav"
+								await message.reply(rename_info)
+							elif command[2].lower() == "list":
+								list_info += "\n> Sends all of the sound files that this server has to use"
+								list_info += "\n> If there enough characters in the list (>2000), this command will take several replies to complete"
+								list_info += "\n> Example:"
+								list_info += f"\n> {example_prefix} list"
+								await message.reply(list_info)
+							elif command[2].lower() == "give":
+								give_info += "\n> Sends copies of sound files that are being used on this server"
+								give_info += "\n> If you request more than 10 files, this command will take multiple replies to complete"
+								give_info += "\n> Examples:"
+								give_info += f"\n> {example_prefix} give example_file.mp3"
+								give_info += f"\n> {example_prefix} give example_file_1.wav example_file_2.mp3"
+								await message.reply(give_info)
+							elif command[2].lower() == "timer":
+								timer_info += "\n> Changes the frequency of when the bot joins channels"
+								timer_info += "\n> Arguments must either be a positive number of seconds, or be in colon format"
+								timer_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+								timer_info += "\n> Note: This command does not automatically reset the bot's current countdown to join"
+								timer_info += "\n> In other words, this command will not take effect until either the next time the bot joins, or the \"reset\" command is used"
+								timer_info += "\n> Examples:"
+								timer_info += f"\n> {example_prefix} timer 60 120"
+								timer_info += f"\n> {example_prefix} timer 0:30:0 1:0:0"
+								timer_info += f"\n> {example_prefix} timer 15:0 60:0"
+								timer_info += f"\n> {example_prefix} timer 0:0:30 3600"
+								timer_info += f"\n> {example_prefix} timer 60:0 0:90:0"
+								timer_info += f"\n> {example_prefix} timer 0 60:0"
+								await message.reply(timer_info)
+							elif command[2].lower() == "timer?":
+								timerq_info += "\n> Tells you the time range for how often the bot will randomly join"
+								timerq_info += "\n> Example:"
+								timerq_info += f"\n> {example_prefix} timer?"
+								await message.reply(timerq_info)
+							elif command[2].lower() == "reset":
+								reset_info += "\n> Resets the bot's waiting time to join"
+								reset_info += "\n> Use this command after using the \"timer\" command if you want the new frequency you inputted to take effect before the next time the bot joins a channel"
+								reset_info += "\n> Example:"
+								reset_info += f"\n> {example_prefix} reset"
+								await message.reply(reset_info)
+							elif command[2].lower() == "play":
+								play_info += "\n> Makes the bot join a voice channel and play a sound"
+								play_info += "\n> If the user is in a voice channel when this command is used, the bot will join the user's voice channel"
+								play_info += "\n> If the user is not in a voice channel when this command is used, the bot will pick a random channel with people in it to join"
+								play_info += "\n> If the command is given a file name of a sound as an argument, then the bot will play that sound"
+								play_info += "\n> If the command is not given any arguments, then the bot will play a random sound from the server's sound list"
+								play_info += "\n> Examples:"
+								play_info += f"\n> {example_prefix} play"
+								play_info += f"\n> {example_prefix} play example_file.mp3"
+								play_info += f"\n> {example_prefix} play example_file.wav"
+								await message.reply(play_info)
+							elif command[2].lower() == "alertoff":
+								alertoff_info += "\n> Disables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
+								alertoff_info += "\n> If this command is given a time argument, alert messages will be disabled for that much time, and then be re-enabled after the time has expired"
+								alertoff_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+								alertoff_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+								alertoff_info += "\n> If this command is not given any arguments, alert messages will stay disabled until another command is used to re-enable them"
+								alertoff_info += "\n> To re-enable alert messages, either use the \"alerton\" command, or use this command again with an argument for how long until they re-enable"
+								alertoff_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								alertoff_info += "\n> Examples:"
+								alertoff_info += f"\n> {example_prefix} alertoff"
+								alertoff_info += f"\n> {example_prefix} alertoff 60"
+								alertoff_info += f"\n> {example_prefix} alertoff 1:30:0"
+								alertoff_info += f"\n> {example_prefix} alertoff 30:0"
+								alertoff_info += f"\n> {example_prefix} alertoff 0:90:0"
+								alertoff_info += f"\n> {example_prefix} alertoff 0:120"
+								await message.reply(alertoff_info)
+							elif command[2].lower() == "alerton":
+								alerton_info += "\n> Enables the bot's alert messages that it sends when it joins a channel randomly (for a certain amount of time if given an argument)"
+								alerton_info += "\n> If this command is given a time argument, alert messages will stay enabled for that much time, and then be disabled after the time has expired"
+								alerton_info += "\n> The argument must either be a positive number of seconds, or be in colon format"
+								alerton_info += "\n> Colon format: \"hrs:min:sec\" or \"min:sec\", Ex: \"1:30:15\" (1 hour, 30 minutes, and 15 seconds), \"45:0\" (45 minutes and 0 seconds)"
+								alerton_info += "\n> If this command is not given any arguments, alert messages will stay enabled until another command is used to disable them"
+								alerton_info += "\n> To disable alert messages, either use the \"alertoff\" command, or use this command again with an argument for how long until they disable"
+								alerton_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								alerton_info += "\n> Examples:"
+								alerton_info += f"\n> {example_prefix} alerton"
+								alerton_info += f"\n> {example_prefix} alerton 60"
+								alerton_info += f"\n> {example_prefix} alerton 1:30:0"
+								alerton_info += f"\n> {example_prefix} alerton 30:0"
+								alerton_info += f"\n> {example_prefix} alerton 0:90:0"
+								alerton_info += f"\n> {example_prefix} alerton 0:120"
+								await message.reply(alerton_info)
+							elif command[2].lower() == "alerton?":
+								alertonq_info += "\n> Tells you if the bot's alert messages are currently enabled or disabled in this server"
+								alertonq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								alertonq_info += "\n> Example:"
+								alertonq_info += f"\n> {example_prefix} alerton?"
+								await message.reply(alertonq_info)
+							elif command[2].lower() == "alert":
+								alert_info += "\n> Changes the alert message that the bot sends when it joins a channel randomly in this server"
+								alert_info += "\n> This command will only take the first 2000 characters of the input due to the discord message size limit"
+								alert_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								alert_info += "\n> Examples:"
+								alert_info += f"\n> {example_prefix} alert New Alert Message"
+								alert_info += f"\n> {example_prefix} alert __Alert Message Underlined With Discord Formatting__"
+								alert_info += f"\n> {example_prefix} alert **CHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOSCHAOS**"
+								await message.reply(alert_info)
+							elif command[2].lower() == "alert?":
+								alertq_info += "\n> Tells you what the bot's current alert message is for this server that it uses when it joins a channel randomly"
+								alertq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								alertq_info += "\n> Example:"
+								alertq_info += f"\n> {example_prefix} alert?"
+								await message.reply(alertq_info)
+							elif command[2].lower() == "alert?f":
+								alertqf_info += "\n> Gives you the un-formatted, raw characters of the bot's current alert message for this server"
+								alertqf_info += "\n> Note: This command may send out triple backticks (\"\\`\\`\\`\") in alert messages like this (\"\\\\\\`\\\\\\`\\\\\\`\")"
+								alertqf_info += "\n> This is due to the fact that the discord developers forgot to make functioning escapes for the code block symbols"
+								alertqf_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								alertqf_info += "\n> Example:"
+								alertqf_info += f"\n> {example_prefix} alert?f"
+								await message.reply(alertqf_info)
+							elif command[2].lower() == "channel":
+								channel_info += "\n> Changes the channel that the bot sends alert messages in"
+								channel_info += "\n> This command will not work if it is not linked a channel that the bot has permission to both read and send messages in"
+								channel_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								channel_info += "\n> Examples:"
+								channel_info += f"\n> {example_prefix} channel ``#general``"
+								channel_info += f"\n> {example_prefix} channel ``#new-alert-channel``"
+								await message.reply(channel_info)
+							elif command[2].lower() == "channel?":
+								channelq_info += "\n> Tells you what channel the bot is currently using to send alert messages in"
+								channelq_info += "\n> Note: The bot does not send alert messages when joining in response to the play command"
+								channelq_info += "\n> Example:"
+								channelq_info += f"\n> {example_prefix} channel?"
+								await message.reply(channelq_info)
+							# otherwise reply with info about every command
+							else:
+								await message.reply(get_help_message())
+						# if there are no arguments
 						else:
+							# reply with info about every command
 							await message.reply(get_help_message())
-					# if there are no arguments
 					else:
-						# reply with info about every command
-						await message.reply(get_help_message())
-				else:
-					await react_with_x(message)
-			# if stfu (shut the fuck up) command
-			elif command[1].lower() == "stfu":
-				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-				if voice_client and voice_client.is_connected():
+						await react_with_x(message)
+				# if stfu (shut the fuck up) command
+				elif command[1].lower() == "stfu":
+					voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
+					if voice_client and voice_client.is_connected():
+						await leave_channel(message.guild)
+						await react_with_check(message)
+					else:
+						await react_with_x(message)
+				# if off command
+				elif command[1].lower() == "off":
+					arg = None
+					# if there is an argument, get it
+					if len(command) > 2:
+						arg = command[2]
+					# flip the enabled setting
+					await flip_setting("enabled", message.guild, False, arg, message)
+					task = task_for_guild[message.guild]
+					# if there is join loop task running right now
+					if not task is None and not task.cancelled() and not task.done():
+						# cancel it
+						task_for_guild[message.guild].cancel()
+					# leave the voice channel
 					await leave_channel(message.guild)
-					await react_with_check(message)
-				else:
-					await react_with_x(message)
-			# if off command
-			elif command[1].lower() == "off":
-				arg = None
-				# if there is an argument, get it
-				if len(command) > 2:
-					arg = command[2]
-				# flip the enabled setting
-				await flip_setting("enabled", message.guild, False, arg, message)
-				task = task_for_guild[message.guild]
-				# if there is join loop task running right now
-				if not task is None and not task.cancelled() and not task.done():
-					# cancel it
-					task_for_guild[message.guild].cancel()
-				# leave the voice channel
-				await leave_channel(message.guild)
-			# if on command
-			elif command[1].lower() == "on":
-				arg = None
-				# if there is an argument, get it
-				if len(command) > 2:
-					arg = command[2]
-				# flip the enabled setting
-				await flip_setting("enabled", message.guild, True, arg, message)
-				task = task_for_guild[message.guild]
-				# if there aren't any join loop tasks running currently
-				if task is None or task.cancelled() or task.done():
-					# create one for the server
-					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
-			# if on? command
-			elif command[1].lower() == "on?":
-				# if the bot is enabled, react with checkmark
-				if enabled_in_guild[message.guild]:
-					await react_with_check(message)
-				# if the bot is off, react with X
-				else:
-					await react_with_x(message)
-			# if add command
-			elif command[1].lower() == "add":
-				# if the message author has the role that allows them to use this command and the message has attatched files
-				if any(role.name == adder_role for role in message.author.roles) and message.attachments:
-					errors = []
-					# check each file in the message
-					for file in message.attachments:
-						is_sound_file = file.filename.endswith(".mp3") or file.filename.endswith(".wav")
-						no_slashes = not "/" in file.filename and not "\\" in file.filename
-						not_a_dupe = not file.filename in get_sounds(sound_dir)
-						# if the file is an mp3 or wav file, the file doesn't contain a "/" or "\" in the name (for security redundancy), there isn't already a file with that name,
-						# the file name is less than 128 characters long, and the file size is less than 10mb (discord limitation)
-						if is_sound_file and no_slashes and not_a_dupe and len(file.filename) < 128 and file.size < 10_000_000:
-							# save the file to the directory of the server the message was from
-							await file.save(f"{sound_dir}/{file.filename}")
-						# if the file couldn't be saved, add it to the error list
-						else:
-							errors.append(file.filename)
-					# reacts to message with a checkmark emoji when done
-					if len(message.attachments) > len(errors):
+				# if on command
+				elif command[1].lower() == "on":
+					arg = None
+					# if there is an argument, get it
+					if len(command) > 2:
+						arg = command[2]
+					# flip the enabled setting
+					await flip_setting("enabled", message.guild, True, arg, message)
+					task = task_for_guild[message.guild]
+					# if there aren't any join loop tasks running currently
+					if task is None or task.cancelled() or task.done():
+						# create one for the server
+						task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
+				# if on? command
+				elif command[1].lower() == "on?":
+					# if the bot is enabled, react with checkmark
+					if enabled_in_guild[message.guild]:
 						await react_with_check(message)
-					# if none of the files could be saved, react with an X emoji
+					# if the bot is off, react with X
 					else:
 						await react_with_x(message)
-					# if there were any files that couldn't be processed, reply with them
-					if errors:
-						await message.reply(get_file_error_message(errors))
-				else:
-					await react_with_x(message)
-			# if remove command
-			elif command[1].lower() == "remove":
-				# if the message author has the role that allows them to use this command and the message command has arguments
-				if any(role.name == remover_role for role in message.author.roles) and len(command) > 2:
-					errors = []
-					# go and remove each file in the arguments
-					for file in command[2:]:
-						filepath = f"{sound_dir}/{file}"
-						# if the argument doesn't contain "/" or "\" (for security redundancy) and the file exists
-						if not "/" in file and not "\\" in file and os.path.isfile(filepath):
-							# delete the file
-							os.remove(filepath)
+				# if add command
+				elif command[1].lower() == "add":
+					# if the message author has the role that allows them to use this command and the message has attatched files
+					if any(role.name == adder_role for role in message.author.roles) and message.attachments:
+						errors = []
+						# check each file in the message
+						for file in message.attachments:
+							is_sound_file = file.filename.endswith(".mp3") or file.filename.endswith(".wav")
+							no_slashes = not "/" in file.filename and not "\\" in file.filename
+							not_a_dupe = not file.filename in get_sounds(sound_dir)
+							# if the file is an mp3 or wav file, the file doesn't contain a "/" or "\" in the name (for security redundancy), there isn't already a file with that name,
+							# the file name is less than 128 characters long, and the file size is less than 10mb (discord limitation)
+							if is_sound_file and no_slashes and not_a_dupe and len(file.filename) < 128 and file.size < 10_000_000:
+								# save the file to the directory of the server the message was from
+								await file.save(f"{sound_dir}/{file.filename}")
+							# if the file couldn't be saved, add it to the error list
+							else:
+								errors.append(file.filename)
+						# reacts to message with a checkmark emoji when done
+						if len(message.attachments) > len(errors):
+							await react_with_check(message)
+						# if none of the files could be saved, react with an X emoji
 						else:
-							errors.append(file)
-					# reacts to message with a checkmark emoji when done
-					if len(command[2:]) > len(errors):
-						await react_with_check(message)
-					# if no files were deleted, then react with X emoji
+							await react_with_x(message)
+						# if there were any files that couldn't be processed, reply with them
+						if errors:
+							await message.reply(get_file_error_message(errors))
 					else:
 						await react_with_x(message)
-					# if there were any files that couldn't be processed, reply with them
-					if errors:
-						await message.reply(get_file_error_message(errors))
-				else:
-					await react_with_x(message)
-			# if rename command
-			elif command[1].lower() == "rename":
-				# if the person has the role that allows them to use this command and the command has enough arguments
-				if any(role.name == adder_role for role in message.author.roles) and len(command) > 3:
-					old_dir = f"{sound_dir}/{command[2]}"
-					no_slashes = not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3]
-					correct_file_extensions = (command[2].endswith(".mp3") and command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))
-					not_a_dupe = not command[3] in get_sounds(sound_dir)
-					# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, 
-					# the new file name is not already being used, and the new file name is less than 128 characters long
-					if os.path.isfile(old_dir) and no_slashes and correct_file_extensions and not_a_dupe and len(command[3]) < 128:
-						# rename the file and react with a check
-						new_dir = f"{sound_dir}/{command[3]}"
-						os.rename(old_dir, new_dir)
-						await react_with_check(message)
+				# if remove command
+				elif command[1].lower() == "remove":
+					# if the message author has the role that allows them to use this command and the message command has arguments
+					if any(role.name == remover_role for role in message.author.roles) and len(command) > 2:
+						errors = []
+						# go and remove each file in the arguments
+						for file in command[2:]:
+							filepath = f"{sound_dir}/{file}"
+							# if the argument doesn't contain "/" or "\" (for security redundancy) and the file exists
+							if not "/" in file and not "\\" in file and os.path.isfile(filepath):
+								# delete the file
+								os.remove(filepath)
+							else:
+								errors.append(file)
+						# reacts to message with a checkmark emoji when done
+						if len(command[2:]) > len(errors):
+							await react_with_check(message)
+						# if no files were deleted, then react with X emoji
+						else:
+							await react_with_x(message)
+						# if there were any files that couldn't be processed, reply with them
+						if errors:
+							await message.reply(get_file_error_message(errors))
 					else:
 						await react_with_x(message)
-				else:
-					await react_with_x(message)
-			# if list command
-			elif command[1].lower() == "list":
-				# if the bot has permission to send messages in this channel
-				if perms.send_messages:
-					# get a list of all sound files in the server's sound folder
-					sounds = get_sounds(sound_dir)
-					# sort the sounds in alphabetical order
-					sounds.sort()
-					sound_message = f"```List of sounds for {message.guild.name[:128]}:"
-					# put all of the sounds into a single string
-					for s in sounds:
-						# if the message length is at the max discord will allow
-						if len(f"{sound_message}\n{s}") >= 1997:
-							# reply with the current string of files
-							sound_message += "```"
-							await message.reply(sound_message)
-							# start the string over and continue to add more
-							sound_message = f"```List of sounds for {message.guild.name[:128]} continued:"
-						sound_message += f"\n{s}"
-					sound_message += "```"
-					# reply with the list of sound files for the server
-					await message.reply(sound_message)
-				else:
-					react_with_x(message)
-			# if give command
-			elif command[1].lower() == "give":
-				# if the command has arguments and the bot can send messages
-				if len(command) > 2 and perms.send_messages and perms.attach_files:
-					files = []
-					errors = []
-					# loop through each argument
-					for filename in command[2:]:
-						filepath = f"{sound_dir}/{filename}"
-						# if the argument doesn't contain "/" (for security redundancy), if the file exists, and if the file is less than 10mb (discord limitation)
-						if not "/" in filename and os.path.isfile(filepath) and os.path.getsize(filepath) < 10_000_000:
-							# add the file to the list of files to send
-							files.append(discord.File(filepath))
-							# if there are 10 files in the list
-							if len(files) == 10:
-								# force send the list then continue adding more files (since discord only lets you send 10 files at once max)
-								await message.reply(files=files)
-								files = []
-						# if the file can't be processed, add to error list
-						else:
-							errors.append(filename)
-					# if there are any files in the list, send it
-					if files:
-						await message.reply(files=files)
-					# if there were any files that couldn't be processed, reply with them
-					if errors:
-						await message.reply(get_file_error_message(errors))
-				else:
-					react_with_x(message)
-			# if timer command
-			elif command[1].lower() == "timer":
-				# if there are enough arguments
-				if len(command) > 3:
-					# try to get the numbers from each argument
-					min = process_time(command[2])
-					max = process_time(command[3])
-					# double check to make sure min and max timers are valid
-					if type(min) is float and type(max) is float:
-						# makes sure the min is not larger than the max
-						if min <= max:
-							# set the min and max timer values for the server
-							timer_for_guild[message.guild][0] = min
-							timer_for_guild[message.guild][1] = max
-							# change the min and max timer values for the server in the server's settings file
-							file_setting(message.guild, "min_timer", min, 2)
-							file_setting(message.guild, "max_timer", max, 3)
-							# reacts to message with a checkmark emoji when done
+				# if rename command
+				elif command[1].lower() == "rename":
+					# if the person has the role that allows them to use this command and the command has enough arguments
+					if any(role.name == adder_role for role in message.author.roles) and len(command) > 3:
+						old_dir = f"{sound_dir}/{command[2]}"
+						no_slashes = not "/" in command[2] and not "\\" in command[2] and not "/" in command[3] and not "\\" in command[3]
+						correct_file_extensions = (command[2].endswith(".mp3") and command[3].endswith(".mp3")) or (command[2].endswith(".wav") and command[3].endswith(".wav"))
+						not_a_dupe = not command[3] in get_sounds(sound_dir)
+						# if the file exists, the arguments don't contain "/" or "\" (for security redundancy), the new name has an mp3 or wav file extension that matches the old file name extension, 
+						# the new file name is not already being used, and the new file name is less than 128 characters long
+						if os.path.isfile(old_dir) and no_slashes and correct_file_extensions and not_a_dupe and len(command[3]) < 128:
+							# rename the file and react with a check
+							new_dir = f"{sound_dir}/{command[3]}"
+							os.rename(old_dir, new_dir)
 							await react_with_check(message)
 						else:
 							await react_with_x(message)
 					else:
 						await react_with_x(message)
-				else:
-					await react_with_x(message)
-			# if timer? command
-			elif command[1].lower() == "timer?":
-				# if the bot has permission to send messages in the channel of the command
-				if perms.send_messages:
-					# calculate the hours, minutes, and seconds for min and max
-					min_hrs = int(timer_for_guild[message.guild][0] // 3600)
-					min_min = int(timer_for_guild[message.guild][0] // 60 % 60)
-					min_sec = timer_for_guild[message.guild][0] % 60
-					max_hrs = int(timer_for_guild[message.guild][1] // 3600)
-					max_min = int(timer_for_guild[message.guild][1] // 60 % 60)
-					max_sec = (timer_for_guild[message.guild][1]) % 60
-					# reply with bot join frequency
-					await message.reply(f"Bot will join every `{min_hrs} hours {min_min} mins {min_sec} secs` to `{max_hrs} hours {max_min} mins {max_sec} secs`")
-				else:
-					await react_with_x(message)
-			# if reset command
-			elif command[1].lower() == "reset":
-				# reset the task for waiting and joining randomly
-				task_for_guild[message.guild].cancel()
-				task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
-				await react_with_check(message)
-			# if play command
-			elif command[1].lower() == "play":
-				voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
-				# if the bot isn't already in a voice channel
-				if voice_client is None:
-					channel = None
-					v_perms = None
-					# if the author is in a voice channel
-					if message.author.voice:
-						# prepare to join their channel
-						channel = message.author.voice.channel
-						v_perms = channel.permissions_for(channel.guild.me)
-					# if the author is not in a voice channel
+				# if list command
+				elif command[1].lower() == "list":
+					# if the bot has permission to send messages in this channel
+					if perms.send_messages:
+						# get a list of all sound files in the server's sound folder
+						sounds = get_sounds(sound_dir)
+						# sort the sounds in alphabetical order
+						sounds.sort()
+						sound_message = f"```List of sounds for {message.guild.name[:128]}:"
+						# put all of the sounds into a single string
+						for s in sounds:
+							# if the message length is at the max discord will allow
+							if len(f"{sound_message}\n{s}") >= 1997:
+								# reply with the current string of files
+								sound_message += "```"
+								await message.reply(sound_message)
+								# start the string over and continue to add more
+								sound_message = f"```List of sounds for {message.guild.name[:128]} continued:"
+							sound_message += f"\n{s}"
+						sound_message += "```"
+						# reply with the list of sound files for the server
+						await message.reply(sound_message)
 					else:
-						# pick a random populated voice channel to join in that server
-						populated_channels = get_populated_vcs(message.guild)
-						if len(populated_channels) > 0:
-							channel = random.choice(populated_channels)
-							v_perms = channel.permissions_for(channel.guild.me)
-					# if the bot has a channel to join that they are allowed to join and speak in
-					if channel and v_perms and v_perms.connect and v_perms.speak:
-						sound_path = ""
-						# if the command has an argument
-						if len(command) > 2:
-							# prepare to play the sound given in the argument
-							sound_path = f"{sound_dir}/{command[2]}"
-							# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
-							if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_path):
-								# join the voice channel and play the sound
-								await play_sound(channel, sound_path)
+						react_with_x(message)
+				# if give command
+				elif command[1].lower() == "give":
+					# if the command has arguments and the bot can send messages
+					if len(command) > 2 and perms.send_messages and perms.attach_files:
+						files = []
+						errors = []
+						# loop through each argument
+						for filename in command[2:]:
+							filepath = f"{sound_dir}/{filename}"
+							# if the argument doesn't contain "/" (for security redundancy), if the file exists, and if the file is less than 10mb (discord limitation)
+							if not "/" in filename and os.path.isfile(filepath) and os.path.getsize(filepath) < 10_000_000:
+								# add the file to the list of files to send
+								files.append(discord.File(filepath))
+								# if there are 10 files in the list
+								if len(files) == 10:
+									# force send the list then continue adding more files (since discord only lets you send 10 files at once max)
+									await message.reply(files=files)
+									files = []
+							# if the file can't be processed, add to error list
 							else:
-								await react_with_x(message)
-						else:
-							# prepare to play a random sound
-							sound_path = f"{sound_dir}/{random.choice(get_sounds(sound_dir))}"
-							# join the voice channel and play the sound
-							await play_sound(channel, sound_path)
+								errors.append(filename)
+						# if there are any files in the list, send it
+						if files:
+							await message.reply(files=files)
+						# if there were any files that couldn't be processed, reply with them
+						if errors:
+							await message.reply(get_file_error_message(errors))
 					else:
-						await react_with_x(message)
-				else:
-					await react_with_x(message)
-			# if alertoff command
-			elif command[1].lower() == "alertoff":
-				arg = None
-				# if there is an argument, get it
-				if len(command) > 2:
-					arg = command[2]
-				# flip the alert_on setting
-				await flip_setting("alert_on", message.guild, False, arg, message)
-			# if alerton command
-			elif command[1].lower() == "alerton":
-				arg = None
-				# if there is an argument, get it
-				if len(command) > 2:
-					arg = command[2]
-				# flip the alert_on setting
-				await flip_setting("alert_on", message.guild, True, arg, message)
-			# if alerton? command
-			elif command[1].lower() == "alerton?":
-				# if alerts are enabled for this server, react with a check
-				if alerton_in_guild[message.guild]:
-					await react_with_check(message)
-				# if alerts are disabled for this server, react with an x
-				else:
-					await react_with_x(message)
-			# if alert command
-			elif command[1].lower() == "alert":
-				# if the command has an argument
-				if len(command) > 2:
-					# turns the first 2000 characters after the alert command into the server's alert message
-					alert_for_guild[message.guild] = message.content[message.content.index("alert")+5:].strip()[:2000]
-					file_setting(message.guild, "alert", alert_for_guild[message.guild], 5)
-					await react_with_check(message)
-				# if the command has no arguments
-				else:
-					await react_with_x(message)
-			# if alert? command
-			elif command[1].lower() == "alert?":
-				# if the bot has permission to send messages in this channel
-				if perms.send_messages:
-					# reply with the server's alert message
-					await message.reply(alert_for_guild[message.guild])
-			# if alert?f command
-			elif command[1].lower() == "alert?f":
-				# if the bot has permission to send messages in this channel
-				if perms.send_messages:
-					# reply with the unformatted, raw characters of the server's alert message
-					deformatted_alert = alert_for_guild[message.guild].replace("```", "\\`\\`\\`")
-					await message.reply(f"```\n{deformatted_alert}\n```")
-			# if channel command
-			elif command[1].lower() == "channel":
-				# if there is an argument and it's in channel format
-				if len(command) > 2 and command[2].startswith("<#") and command[2].endswith(">"):
-					# attempt to cast it to a channel
-					try:
-						alert_channel = client.get_channel(int(command[2][2:command[2].index(">")]))
-						# if the channel was found
-						if not alert_channel is None:
-							alert_perms = alert_channel.permissions_for(message.guild.me)
-							# if the bot has permission to read and message in that channel
-							if alert_perms.read_messages and alert_perms.send_messages:
-								# change the alert channel, save the setting for it, and react with a check
-								channel_for_guild[message.guild] = alert_channel
-								file_setting(message.guild, "alert_channel", channel_for_guild[message.guild].id, 6)
+						react_with_x(message)
+				# if timer command
+				elif command[1].lower() == "timer":
+					# if there are enough arguments
+					if len(command) > 3:
+						# try to get the numbers from each argument
+						min = process_time(command[2])
+						max = process_time(command[3])
+						# double check to make sure min and max timers are valid
+						if type(min) is float and type(max) is float:
+							# makes sure the min is not larger than the max
+							if min <= max:
+								# set the min and max timer values for the server
+								timer_for_guild[message.guild][0] = min
+								timer_for_guild[message.guild][1] = max
+								# change the min and max timer values for the server in the server's settings file
+								file_setting(message.guild, "min_timer", min, 2)
+								file_setting(message.guild, "max_timer", max, 3)
+								# reacts to message with a checkmark emoji when done
 								await react_with_check(message)
 							else:
 								await react_with_x(message)
 						else:
 							await react_with_x(message)
-					except:
-						await react_with_x(message)
-				else:
-					await react_with_x(message)
-			# if channel? command
-			elif command[1].lower() == "channel?":
-				# if the bot has permission to send messages in this channel
-				if perms.send_messages:
-					# if the bot doesn't have an alert channel
-					if channel_for_guild[message.guild] is None:
-						# reply letting the user know that the bot doesn't have an alert channel
-						await message.reply("This server doesn't have an alert channel currently")
-					# if the bot does have an alert channel
 					else:
-						# reply with the bot's alert channel
-						await message.reply(f"<#{channel_for_guild[message.guild].id}>")
+						await react_with_x(message)
+				# if timer? command
+				elif command[1].lower() == "timer?":
+					# if the bot has permission to send messages in the channel of the command
+					if perms.send_messages:
+						# calculate the hours, minutes, and seconds for min and max
+						min_hrs = int(timer_for_guild[message.guild][0] // 3600)
+						min_min = int(timer_for_guild[message.guild][0] // 60 % 60)
+						min_sec = timer_for_guild[message.guild][0] % 60
+						max_hrs = int(timer_for_guild[message.guild][1] // 3600)
+						max_min = int(timer_for_guild[message.guild][1] // 60 % 60)
+						max_sec = (timer_for_guild[message.guild][1]) % 60
+						# reply with bot join frequency
+						await message.reply(f"Bot will join every `{min_hrs} hours {min_min} mins {min_sec} secs` to `{max_hrs} hours {max_min} mins {max_sec} secs`")
+					else:
+						await react_with_x(message)
+				# if reset command
+				elif command[1].lower() == "reset":
+					# reset the task for waiting and joining randomly
+					task_for_guild[message.guild].cancel()
+					task_for_guild[message.guild] = client.loop.create_task(join_loop(message.guild))
+					await react_with_check(message)
+				# if play command
+				elif command[1].lower() == "play":
+					voice_client = discord.utils.get(client.voice_clients, guild = message.guild)
+					# if the bot isn't already in a voice channel
+					if voice_client is None:
+						channel = None
+						v_perms = None
+						# if the author is in a voice channel
+						if message.author.voice:
+							# prepare to join their channel
+							channel = message.author.voice.channel
+							v_perms = channel.permissions_for(channel.guild.me)
+						# if the author is not in a voice channel
+						else:
+							# pick a random populated voice channel to join in that server
+							populated_channels = get_populated_vcs(message.guild)
+							if len(populated_channels) > 0:
+								channel = random.choice(populated_channels)
+								v_perms = channel.permissions_for(channel.guild.me)
+						# if the bot has a channel to join that they are allowed to join and speak in
+						if channel and v_perms and v_perms.connect and v_perms.speak:
+							sound_path = ""
+							# if the command has an argument
+							if len(command) > 2:
+								# prepare to play the sound given in the argument
+								sound_path = f"{sound_dir}/{command[2]}"
+								# if the argument doesn't contain "/" or "\" (for security redundancy) and the file in the argument exists
+								if not "/" in command[2] and not "\\" in command[2] and os.path.isfile(sound_path):
+									# join the voice channel and play the sound
+									await play_sound(channel, sound_path)
+								else:
+									await react_with_x(message)
+							else:
+								# prepare to play a random sound
+								sound_path = f"{sound_dir}/{random.choice(get_sounds(sound_dir))}"
+								# join the voice channel and play the sound
+								await play_sound(channel, sound_path)
+						else:
+							await react_with_x(message)
+					else:
+						await react_with_x(message)
+				# if alertoff command
+				elif command[1].lower() == "alertoff":
+					arg = None
+					# if there is an argument, get it
+					if len(command) > 2:
+						arg = command[2]
+					# flip the alert_on setting
+					await flip_setting("alert_on", message.guild, False, arg, message)
+				# if alerton command
+				elif command[1].lower() == "alerton":
+					arg = None
+					# if there is an argument, get it
+					if len(command) > 2:
+						arg = command[2]
+					# flip the alert_on setting
+					await flip_setting("alert_on", message.guild, True, arg, message)
+				# if alerton? command
+				elif command[1].lower() == "alerton?":
+					# if alerts are enabled for this server, react with a check
+					if alerton_in_guild[message.guild]:
+						await react_with_check(message)
+					# if alerts are disabled for this server, react with an x
+					else:
+						await react_with_x(message)
+				# if alert command
+				elif command[1].lower() == "alert":
+					# if the command has an argument
+					if len(command) > 2:
+						# turns the first 2000 characters after the alert command into the server's alert message
+						alert_for_guild[message.guild] = message.content[message.content.index("alert")+5:].strip()[:2000]
+						file_setting(message.guild, "alert", alert_for_guild[message.guild], 5)
+						await react_with_check(message)
+					# if the command has no arguments
+					else:
+						await react_with_x(message)
+				# if alert? command
+				elif command[1].lower() == "alert?":
+					# if the bot has permission to send messages in this channel
+					if perms.send_messages:
+						# reply with the server's alert message
+						await message.reply(alert_for_guild[message.guild])
+				# if alert?f command
+				elif command[1].lower() == "alert?f":
+					# if the bot has permission to send messages in this channel
+					if perms.send_messages:
+						# reply with the unformatted, raw characters of the server's alert message
+						deformatted_alert = alert_for_guild[message.guild].replace("```", "\\`\\`\\`")
+						await message.reply(f"```\n{deformatted_alert}\n```")
+				# if channel command
+				elif command[1].lower() == "channel":
+					# if there is an argument and it's in channel format
+					if len(command) > 2 and command[2].startswith("<#") and command[2].endswith(">"):
+						# attempt to cast it to a channel
+						try:
+							alert_channel = client.get_channel(int(command[2][2:command[2].index(">")]))
+							# if the channel was found
+							if not alert_channel is None:
+								alert_perms = alert_channel.permissions_for(message.guild.me)
+								# if the bot has permission to read and message in that channel
+								if alert_perms.read_messages and alert_perms.send_messages:
+									# change the alert channel, save the setting for it, and react with a check
+									channel_for_guild[message.guild] = alert_channel
+									file_setting(message.guild, "alert_channel", channel_for_guild[message.guild].id, 6)
+									await react_with_check(message)
+								else:
+									await react_with_x(message)
+							else:
+								await react_with_x(message)
+						except:
+							await react_with_x(message)
+					else:
+						await react_with_x(message)
+				# if channel? command
+				elif command[1].lower() == "channel?":
+					# if the bot has permission to send messages in this channel
+					if perms.send_messages:
+						# if the bot doesn't have an alert channel
+						if channel_for_guild[message.guild] is None:
+							# reply letting the user know that the bot doesn't have an alert channel
+							await message.reply("This server doesn't have an alert channel currently")
+						# if the bot does have an alert channel
+						else:
+							# reply with the bot's alert channel
+							await message.reply(f"<#{channel_for_guild[message.guild].id}>")
+					else:
+						await react_with_x(message)
+		# if the message is a ratio command
+		elif message.content == "ratio" or message.content.endswith("+ratio") or message.content.endswith("+ ratio"):
+			author_id = message.author.id
+			channel_name = message.channel.name
+			channel_id = message.channel.id
+			guild_id = message.guild.id
+			# log the command
+			await log_action(f"Detected command (Message ID: {message.id}), (Author ID: {author_id}), (Content: {message.content}) (Channel Name: {channel_name}), (Channel ID: {channel_id})", guild_id)
+			# if the message is a reply and the message being replied to can be found
+			if message.reference is not None and message.reference.cached_message is not None:
+				# if the user is not trying to ratio me
+				if message.reference.cached_message.author.id != 224746044502704130:
+					# complete the ratio
+					await ratio(message.reference.cached_message, good_message=message)
+				# if the user is trying to ratio me
 				else:
-					await react_with_x(message)
+					# ratio the user instead lol
+					await ratio(message, content="no")
+			# if the user didn't give a message to ratio
+			elif message.reference is None:
+				# counter-ratio the user
+				await ratio(message, content="used the command wrong + ratio")
+			# if the user can't find the message to ratio
+			else:
+				await react_with_x(message)
 
 # changes a boolean setting for a server
 async def flip_setting(setting, guild, target_val, arg, message):
@@ -1116,14 +1143,65 @@ def file_setting(guild, setting_name, value, index):
 # makes the bot react to a message with a checkmark emoji if it's able to
 async def react_with_check(message):
 	perms = message.channel.permissions_for(message.guild.me)
-	if perms.add_reactions:
+	if perms.add_reactions and message is not None:
 		await message.add_reaction("\u2705")
 
 # makes the bot react to a message with an X emoji if it's able to
 async def react_with_x(message):
 	perms = message.channel.permissions_for(message.guild.me)
-	if perms.add_reactions:
+	if perms.add_reactions and message is not None:
 		await message.add_reaction("\u274c")
+
+# ratios a message with reactions
+async def ratio(bad_message, good_message=None, content="ratio"):
+	perms = bad_message.channel.permissions_for(bad_message.guild.me)
+	# if the bot has permission to send messages and add reactions in the channel and the bad message can be found
+	if perms.send_messages and perms.add_reactions and bad_message is not None:
+		# if no message to ratio with is given
+		if good_message == None:
+			# the bot ratios the person themselves by default
+			good_message = await bad_message.reply(content)
+		# commence the ratio
+		await good_message.add_reaction("\U0001f4af")
+		await bad_message.add_reaction("\U0001f480")
+		await good_message.add_reaction("\U0001f525")
+		await bad_message.add_reaction("\U0001f6d1")
+		await good_message.add_reaction("\U0001f44d")
+		await bad_message.add_reaction("\U0001f44e")
+		await good_message.add_reaction("\u2b06")
+		await bad_message.add_reaction("\u2b07")
+		await good_message.add_reaction("\U0001f60e")
+		await bad_message.add_reaction("\U0001f620")
+		await good_message.add_reaction("\U0001f911")
+		await bad_message.add_reaction("\U0001f47a")
+		await good_message.add_reaction("\U0001f9e0")
+		await bad_message.add_reaction("\U0001f4a9")
+		await good_message.add_reaction("\U0001f92f")
+		await bad_message.add_reaction("\U0001f922")
+		await good_message.add_reaction("\U0001f633")
+		await bad_message.add_reaction("\U0001f976")
+		await good_message.add_reaction("\U0001f602")
+		await bad_message.add_reaction("\U0001f92c")
+		await good_message.add_reaction("\U0001f929")
+		await bad_message.add_reaction("\U0001f913")
+		await good_message.add_reaction("\U0001f48e")
+		await bad_message.add_reaction("\U0001f9a0")
+		await good_message.add_reaction("\U0001f1ec")
+		await bad_message.add_reaction("\U0001f1e7")
+		await good_message.add_reaction("\U0001f1f4")
+		await bad_message.add_reaction("\U0001f1e6")
+		await good_message.add_reaction("\U0001f1e9")
+		await bad_message.add_reaction("\U0001f1e9")
+		await good_message.add_reaction("\u262e")
+		await bad_message.add_reaction("\U0001f52b")
+		await good_message.add_reaction("\U0001f3f3\uFE0F\u200D\U0001f308")
+		await bad_message.add_reaction("\U0001f1ec\U0001f1e7")
+		await good_message.add_reaction("\U0001f3f3\uFE0F\u200D\u26A7\uFE0F")
+		await bad_message.add_reaction("\U0001f1e7\U0001f1f7")
+		await good_message.add_reaction("\U0001f4aa")
+		await bad_message.add_reaction("\U0001f476")
+		await good_message.add_reaction("\U0001f60d")
+		await bad_message.add_reaction("\U0001f921")
 
 # returns an errors message containing files in a list
 def get_file_error_message(errors):
