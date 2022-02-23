@@ -68,6 +68,9 @@ enabled_waiter_for_guild = {}
 # keeps track of timed alerton and alertoff commands
 alert_waiter_for_guild = {}
 
+# keeps makes it so the bot can't be ratioing 2 messages at the same time in the same server (make this channel specific instead of server specific later)
+ratio_cooldown_for_guild = {}
+
 # called as soon as the bot is fully online and operational
 @client.event
 async def on_ready():
@@ -285,6 +288,8 @@ async def start_in_server(guild):
 	alert_waiter_for_guild[guild] = None
 	# creates a task for the bot to start running in for that server so multiple while loops can be running at once without the program freezing
 	task_for_guild[guild] = client.loop.create_task(join_loop(guild))
+	# initializes the ratio cooldown for the server
+	ratio_cooldown_for_guild[guild] = False
 
 # waits a random amount of time, joins a voice channel channel, plays a random sound, then leaves and repeats
 # this function gets run separately for each server the bot is in
@@ -1057,30 +1062,52 @@ async def on_message(message):
 					else:
 						await react_with_x(message)
 		# if the message is a ratio command
-		elif message.content == "ratio" or message.content.endswith("+ratio") or message.content.endswith("+ ratio"):
-			author_id = message.author.id
-			channel_name = message.channel.name
-			channel_id = message.channel.id
-			guild_id = message.guild.id
-			# log the command
-			await log_action(f"Detected command (Message ID: {message.id}), (Author ID: {author_id}), (Content: {message.content}) (Channel Name: {channel_name}), (Channel ID: {channel_id})", guild_id)
-			# if the message is a reply and the message being replied to can be found
-			if message.reference is not None and message.reference.cached_message is not None:
-				# if the user is not trying to ratio me
-				if message.reference.cached_message.author.id != 224746044502704130:
-					# complete the ratio
-					await ratio(message.reference.cached_message, good_message=message)
-				# if the user is trying to ratio me
+		elif is_ratio(message.content):
+			# if the server is not currently on a ratio cooldown
+			if not ratio_cooldown_for_guild[message.guild]:
+				# enable the server's ratio cooldown
+				ratio_cooldown_for_guild[message.guild] = True
+				author_id = message.author.id
+				channel_name = message.channel.name
+				channel_id = message.channel.id
+				guild_id = message.guild.id
+				# log the command
+				await log_action(f"Detected command (Message ID: {message.id}), (Author ID: {author_id}), (Content: {message.content}) (Channel Name: {channel_name}), (Channel ID: {channel_id})", guild_id)
+				# if the message is a reply and the message being replied to can be found
+				if message.reference is not None and message.reference.cached_message is not None:
+					# if the user is not trying to ratio me
+					if message.reference.cached_message.author.id != 224746044502704130:
+						# complete the ratio
+						try:
+							await ratio(message.reference.cached_message, good_message=message)
+						except:
+							ratio_cooldown_for_guild[message.guild] = False
+					# if the user is trying to ratio me
+					else:
+						# ratio the user instead lol
+						try:
+							await ratio(message, content="no")
+						except:
+							ratio_cooldown_for_guild[message.guild] = False
+				# if the user didn't give a message to ratio
+				elif message.reference is None:
+					# counter-ratio the user
+					try:
+						await ratio(message, content="used the command wrong + ratio")
+					except:
+						ratio_cooldown_for_guild[message.guild] = False
+				# if the user can't find the message to ratio
 				else:
-					# ratio the user instead lol
-					await ratio(message, content="no")
-			# if the user didn't give a message to ratio
-			elif message.reference is None:
-				# counter-ratio the user
-				await ratio(message, content="used the command wrong + ratio")
-			# if the user can't find the message to ratio
+					try:
+						await react_with_x(message)
+					except:
+						ratio_cooldown_for_guild[message.guild] = False
+				# turn off the server's ratio cooldown to allow for another one
+				ratio_cooldown_for_guild[message.guild] = False
+			# if the server is currently on a ratio cooldown
 			else:
-				await react_with_x(message)
+				# react with a raised hand telling user to wait (might have to replace with something else to deal with mega spam since this can still be halted by that)
+				await react_with_hand(message)
 
 # changes a boolean setting for a server
 async def flip_setting(setting, guild, target_val, arg, message):
@@ -1152,6 +1179,12 @@ async def react_with_x(message):
 	if perms.add_reactions and message is not None:
 		await message.add_reaction("\u274c")
 
+# makes the bot ract to a message with a raised hand emoji if it's able to
+async def react_with_hand(message):
+	perms = message.channel.permissions_for(message.guild.me)
+	if perms.add_reactions and message is not None:
+		await message.add_reaction("\u270b")
+
 # ratios a message with reactions
 async def ratio(bad_message, good_message=None, content="ratio"):
 	perms = bad_message.channel.permissions_for(bad_message.guild.me)
@@ -1162,46 +1195,68 @@ async def ratio(bad_message, good_message=None, content="ratio"):
 			# the bot ratios the person themselves by default
 			good_message = await bad_message.reply(content)
 		# commence the ratio
-		await good_message.add_reaction("\U0001f4af")
-		await bad_message.add_reaction("\U0001f480")
-		await good_message.add_reaction("\U0001f525")
-		await bad_message.add_reaction("\U0001f6d1")
-		await good_message.add_reaction("\U0001f44d")
-		await bad_message.add_reaction("\U0001f44e")
-		await good_message.add_reaction("\u2b06")
-		await bad_message.add_reaction("\u2b07")
-		await good_message.add_reaction("\U0001f60e")
-		await bad_message.add_reaction("\U0001f620")
-		await good_message.add_reaction("\U0001f911")
-		await bad_message.add_reaction("\U0001f47a")
-		await good_message.add_reaction("\U0001f9e0")
-		await bad_message.add_reaction("\U0001f4a9")
-		await good_message.add_reaction("\U0001f92f")
-		await bad_message.add_reaction("\U0001f922")
-		await good_message.add_reaction("\U0001f633")
-		await bad_message.add_reaction("\U0001f976")
-		await good_message.add_reaction("\U0001f602")
-		await bad_message.add_reaction("\U0001f92c")
-		await good_message.add_reaction("\U0001f929")
-		await bad_message.add_reaction("\U0001f913")
-		await good_message.add_reaction("\U0001f48e")
-		await bad_message.add_reaction("\U0001f9a0")
-		await good_message.add_reaction("\U0001f1ec")
-		await bad_message.add_reaction("\U0001f1e7")
-		await good_message.add_reaction("\U0001f1f4")
-		await bad_message.add_reaction("\U0001f1e6")
-		await good_message.add_reaction("\U0001f1e9")
-		await bad_message.add_reaction("\U0001f1e9")
-		await good_message.add_reaction("\u262e")
-		await bad_message.add_reaction("\U0001f52b")
-		await good_message.add_reaction("\U0001f3f3\uFE0F\u200D\U0001f308")
-		await bad_message.add_reaction("\U0001f1ec\U0001f1e7")
-		await good_message.add_reaction("\U0001f3f3\uFE0F\u200D\u26A7\uFE0F")
-		await bad_message.add_reaction("\U0001f1e7\U0001f1f7")
-		await good_message.add_reaction("\U0001f4aa")
-		await bad_message.add_reaction("\U0001f476")
-		await good_message.add_reaction("\U0001f60d")
-		await bad_message.add_reaction("\U0001f921")
+		reaction_count = 20
+		# if both messages still have enough room for reactions (less than 20), then react
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f4af")
+			await bad_message.add_reaction("\U0001f480")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f525")
+			await bad_message.add_reaction("\U0001f6d1")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f44d")
+			await bad_message.add_reaction("\U0001f44e")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\u2b06")
+			await bad_message.add_reaction("\u2b07")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f60e")
+			await bad_message.add_reaction("\U0001f620")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f911")
+			await bad_message.add_reaction("\U0001f47a")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f9e0")
+			await bad_message.add_reaction("\U0001f4a9")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f92f")
+			await bad_message.add_reaction("\U0001f922")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f633")
+			await bad_message.add_reaction("\U0001f976")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f602")
+			await bad_message.add_reaction("\U0001f92c")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f929")
+			await bad_message.add_reaction("\U0001f913")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f48e")
+			await bad_message.add_reaction("\U0001f9a0")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f1ec")
+			await bad_message.add_reaction("\U0001f1e7")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f1f4")
+			await bad_message.add_reaction("\U0001f1e6")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f1e9")
+			await bad_message.add_reaction("\U0001f1e9")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\u262e")
+			await bad_message.add_reaction("\U0001f52b")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f3f3\uFE0F\u200D\U0001f308")
+			await bad_message.add_reaction("\U0001f1ec\U0001f1e7")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f3f3\uFE0F\u200D\u26A7\uFE0F")
+			await bad_message.add_reaction("\U0001f1e7\U0001f1f7")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f4aa")
+			await bad_message.add_reaction("\U0001f476")
+		if len(good_message.reactions) < reaction_count and len(bad_message.reactions) < reaction_count:
+			await good_message.add_reaction("\U0001f60d")
+			await bad_message.add_reaction("\U0001f921")
 
 # returns an errors message containing files in a list
 def get_file_error_message(errors):
@@ -1276,6 +1331,10 @@ async def wait_to_flip(setting, guild, time):
 		# flip it and change the write the setting into the settings file
 		alerton_in_guild[guild] = not alerton_in_guild[guild]
 		file_setting(guild, "alert_on", alerton_in_guild[guild], 4)
+
+# returns if the message is a ratio command
+def is_ratio(message):
+	return message.lower() == "ratio" or message.lower().endswith("+ratio") or message.lower().endswith("+ ratio") or message.lower().endswith(" ratio") or message.lower().endswith("counter-ratio")
 
 # sets up the bot every time it joins a new server while running
 @client.event
