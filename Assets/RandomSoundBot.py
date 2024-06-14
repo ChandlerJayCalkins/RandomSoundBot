@@ -18,8 +18,8 @@
 # 	Connect
 # 	Speak
 
-from cgitb import enable
-from distutils.log import error
+#from cgitb import enable
+#from distutils.log import error
 import discord
 from discord import FFmpegPCMAudio
 from datetime import datetime
@@ -33,8 +33,10 @@ ffmpeg_options = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 }
 
-# sets up the bot client
-client = discord.Client()
+# declares the intents of the bot
+intents = discord.Intents(messages=True, reactions=True, emojis=True, guilds=True, voice_states=True)
+# creates the bot client
+client = discord.Client(intents=intents)
 
 # gets the secret bot token by reading it from a local txt file
 with open("BotToken.txt", "r") as f:
